@@ -1,0 +1,6 @@
+{
+    "name": "uwc",
+    "require": {
+        "slim/slim": "2.*"
+    }
+}

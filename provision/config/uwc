@@ -1,0 +1,28 @@
+server {
+    listen 80;
+    server_name uwc;
+     
+    root /home/vagrant/www/;
+    index index.php index.html;
+     
+    # Important for VirtualBox
+    sendfile off;
+     
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api {
+        root /home/vagrant/api/;
+        add_header X-nginx-uri $args;
+
+        #rewrite ^ http://www.google.com/?q="$fastcgi_script_name?$args" last; break;
+
+        include fastcgi_params;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME /home/vagrant$fastcgi_script_name;
+        fastcgi_index index.php;
+    }
+
+
+}

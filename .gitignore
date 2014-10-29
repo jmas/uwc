@@ -1,0 +1,5 @@
+/vendor/
+.vagrant
+.cache/
+.bash_history
+composer.lock
