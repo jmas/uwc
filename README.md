@@ -1,3 +1,6 @@
+"God forbid!" team
+==================
+
 1. Add Composer and place in directory "api"
 2. Setup fresh Slim Framework in directory "api"
 2. Add Vagrant configuration file "Vagrantfile" and place in current directory
