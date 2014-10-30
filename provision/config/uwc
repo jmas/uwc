@@ -13,7 +13,7 @@ server {
     }
 
     location /api/ {
-    	root /home/vagrant/api; 
+    	root /home/vagrant; 
     	index index.php; 
         try_files /api/$uri /api/index.php?$args;
     }
