@@ -19,11 +19,10 @@ echo "Installing PHP extensions"
 sudo apt-get install curl php5-curl php5-gd php5-mcrypt php5-sqlite sqlite3 -y > /dev/null 2>&1
 
 echo "Installing Composer dependencies"
-cd /var/www/uwc
-sudo apt-get install curl libcurl3 libcurl3-dev
-curl -sS https://getcomposer.org/installer | php
 php composer.phar install
 
+echo "Rights..."
+chmod -Rf 775 *
 # echo "Installing Composer"
 # curl -sS https://getcomposer.org/installer | php > /dev/null 2>&1 
 # sudo mv composer.phar /usr/local/bin/composer

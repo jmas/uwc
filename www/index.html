@@ -1,199 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>UWC Shop</title>
-    <style type="text/css">
-    	* {
-    		box-sizing: border-box;
-    		padding: 0;
-			margin: 0;
-    	}
-    	body, html {
-			height: 100%;
-			font-family: Arial, Helvetica, sans-serif;
-		}
-		.container {
-			width: 960px;
-			height: 100%;
-			margin: 0 auto;
-			
-		}
-		.content {
-			width:615px;
-			float: left;
-			padding: 20px 10px;
-			background: rgb(255,255,255);
-		}
-		.aside {
-			padding: 20px 10px;
-		}
-
-		.product {
-			width: 265px;
-			height: 265px;
-			margin: 10px;
-			float: left;
-			-webkit-box-shadow: 0 10px 6px -6px #777;
-			-moz-box-shadow: 0 10px 6px -6px #777;
-			box-shadow: 0 10px 6px -6px #777;
-		}
-		.product > .image {
-			width: 265px;
-			height: 195px;
-			display: block;
-		}
-
-		.product > .info {
-			background: rgb(243,243,245);
-			height: 70px;
-			padding: 15px;
-			font-size: 16px;
-			font-weight: bold;
-			position: relative;
-		}
-
-		.product > .info > .description {
-			clear: both;
-			padding: 0 0 5px 0;
-		}
-
-		.product > .info > .price {
-			float: left;
-			color: #6d9eeb; /*blue*/
-			color: #6aa84f; /*green*/
-		}
-		.product > .info > a {
-			border-radius: 3px;
-			width: 90px;
-			height: 40px;
-			position: absolute;
-			top:15px;
-			right: 10px;
-			line-height: 36px;
-			text-decoration: none;
-			text-align: center;
-		}
-
-		.product > .info > .add-to-cart {
-			border: 3px solid #6aa84f;
-			color: #6aa84f;
-			font-size: 13px;
-		}
-		.product > .info > .remove-from-cart {
-			border: 3px solid rgb(230, 145, 56);
-			color: rgb(230, 145, 56);
-			font-size: 13px;
-			line-height: 17px;
-		}
-
-		.aside {
-			background: rgb(251,251,251);
-			float: right;
-			height: 100%;
-		}
-
-		.product-in-cart {
-			margin: 10px;
-			width: 280px;
-			height: 90px;
-			float: right;
-						-webkit-box-shadow: 0 10px 6px -6px #777;
-			-moz-box-shadow: 0 10px 6px -6px #777;
-			box-shadow: 0 10px 6px -6px #777;
-		}
-
-		.product-in-cart > .image {
-			width: 105px;
-			height: 90px;
-			float: left;
-		}
-
-		.product-in-cart > .info {
-			background: rgb(243,243,245);
-			width: 175px;
-			height: 90px;
-			padding: 10px 15px;
-			font-size: 16px;
-			font-weight: bold;
-			position: relative;
-			float: right;
-		}
-
-		.product-in-cart > .info > .description {
-			padding: 0 0 5px 0;
-		}
-
-		.product-in-cart > .info > .price {
-			color: #6aa84f;
-			font-size: 14px;
-			padding: 0 0 5px 0;
-		}
-
-		.product-in-cart > .info > .remove-from-cart {
-			border-radius: 3px;
-			width: 145px;
-			height: 25px;
-			margin: 0 auto;
-			text-decoration: none;
-			text-align: center;
-			border: 3px solid rgb(230, 145, 56);
-			color: rgb(230, 145, 56);
-			font-size: 13px;
-			line-height: 20px;
-			display: block;
-		}
-
-    </style>
+	<meta charset="utf-8" />
+	<title>Store</title>
+	<link href="styles.css" rel="stylesheet" />
 </head>
 <body>
-    
-    <div class="container">
-    	<h1>UWS SHOP</h1>
-    	<div class="content">
-			<div class="product">
-				<img class="image" src="http://lorempixel.com/265/195/food/1/" alt="">
-				<div class="info">
-					<div class="description">Яблоко, зеленое</div>
+
+	<div id="aside-content">
+		<div id="aside-title">Корзина</div>
+		<div class="empty">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>
+		<!--<div id="cart-product-list" class="product-list">
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
 					<div class="price">30 грн. 00 коп.</div>
-					<a href="#" class="add-to-cart">В корзину</a>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
 				</div>
 			</div>
-			<div class="product">
-				<img class="image" src="http://lorempixel.com/265/195/food/2/" alt="">
-				<div class="info">
-					<div class="description">Яблоко, зеленое</div>
-					<div class="price">30 грн 00 коп</div>
-					<a href="#" class="remove-from-cart">Убрать из корзины</a>
-				</div>
-			</div>			
-			<div class="product">
-				<img class="image" src="http://lorempixel.com/265/195/food/3/" alt="">
-				<div class="info">
-					<div class="description">Огурец консерв.</div>
-					<div class="price">30 грн 00 коп</div>
-					<a href="#" class="remove-from-cart">Убрать из корзины</a>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
 				</div>
 			</div>
-			<div class="product">
-				<img class="image" src="http://lorempixel.com/265/195/food/4/" alt="">
-				<div class="info">
-					<div class="description">Яблоко, зеленое</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
 					<div class="price">30 грн. 00 коп.</div>
-					<a href="#" class="add-to-cart">В корзину</a>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
 				</div>
 			</div>
-    	</div>
-    	<div class="aside">
-    		<div class="product-in-cart">
-    			<img class="image" src="http://lorempixel.com/105/90/food/3/" alt="">
-    			<div class="info">
-					<div class="description">Яблоко, зеленое</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
 					<div class="price">30 грн. 00 коп.</div>
-					<a href="#" class="remove-from-cart">Убрать из корзины</a>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
 				</div>
-    		</div>
-    	</div>
-    </div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/1/" alt="">
+					<div class="amount">10</div>
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+		</div>
+		<div id="cart-checkout">
+			<a class="action-btn accept" href="#">Оформить заказ на 100 грн. 20 коп.</a>
+		</div>-->
+	</div>
+
+	<div id="main-content">
+		<div id="main-product-list" class="product-list">
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?2" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?3" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?4" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?5" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?6" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?7" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?8" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?9" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?10" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?11" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn accept">В корзину</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?12" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+			<div class="product-item">
+				<a class="product-image" href="#">
+					<img src="http://lorempixel.com/265/195/food/?13" alt="">
+					<!-- <div class="amount">10</div> -->
+				</a>
+				<div class="product-summary">
+					<div class="name">Яблоко, зеленое</div>
+					<div class="price">30 грн. 00 коп.</div>
+					<a href="#" class="action-btn remove">Убрать из корзины</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
 </body>
 </html>

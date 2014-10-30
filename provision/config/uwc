@@ -18,6 +18,10 @@ server {
         try_files /api/$uri /api/index.php?$args;
     }
 
+    location /html {
+        alias /home/vagrant/html;
+    }
+
     location ~* \.php {
         include fastcgi_params;
         fastcgi_pass unix:/var/run/php5-fpm.sock; 
