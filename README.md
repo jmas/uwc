@@ -6,6 +6,6 @@
 2. Add Vagrant configuration file "Vagrantfile" and place in current directory
 3. Do **HTML and CSS** and place in directory **"html"**
 4. Do **Sqlite3 DB** structure and place in directory **"db"**
-5. Do **API** using Slim in directory **"routes"**
+5. Do **API routes** using Slim in directory **"routes"**
 6. Do **front** (not complied HTML + CSS + JS) in directory **"front"**
 7. **Build front** (./build-front.sh) and result will be at directory **"www"**
