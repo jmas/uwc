@@ -1,5 +1,7 @@
 <?php
 
+// Get list of products
+
 $app->get('/', function () use ($app) {
   $sql = 'SELECT * FROM product';
 
@@ -15,6 +17,9 @@ $app->get('/', function () use ($app) {
     'result'=>$result,
   ]));
 });
+
+
+// Get one product
 
 $app->get('/:id', function($id) use ($app) {
   $stmt = $app->db->prepare('SELECT * FROM product WHERE id = :id LIMIT 1');
