@@ -41,20 +41,20 @@ $app->get('/:id', function($id) use ($app) {
 
 // Recomendation: Bought with
 
-$app->get('/buy_with/:id', function($id) use ($app) {
+$app->get('/buy-with/:id', function($id) use ($app) {
   
 });
 
 
 // Recomendation: Viewed with
 
-$app->get('/view_with/:id', function($id) use ($app) {
+$app->get('/view-with/:id', function($id) use ($app) {
 
 });
 
 
 // Recomendation: Added to cart with
 
-$app->get('/cart_with/:id', function($id) use ($app) {
+$app->get('/cart-with/:id', function($id) use ($app) {
   
 });  
