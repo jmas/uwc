@@ -22,7 +22,9 @@ $app->get('/', function () use ($app) {
 // Get one product
 
 $app->get('/:id', function($id) use ($app) {
-  $stmt = $app->db->prepare('SELECT * FROM product WHERE id = :id LIMIT 1');
+  $sql = 'SELECT * FROM product WHERE id=:id LIMIT 1';
+
+  $stmt = $app->db->prepare($sql);
   $stmt->bindParam(':id', $id);
   
   if ($stmt->execute() === false) {
