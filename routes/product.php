@@ -39,21 +39,22 @@ $app->get('/:id', function($id) use ($app) {
 });
 
 
-// Recomendations
+// Recomendation: Bought with
 
-$app->group('/recomend/', function() use ($app) {
-  // Bought with
-  $app->get('/buy_with/:id', function($id) use ($app) {
-    
-  });
-
-  // Viewed with
-  $app->get('/view_with/:id', function($id) use ($app) {
-    
-  });
-
-  // Added to cart with
-  $app->get('/cart_with/:id', function($id) use ($app) {
-    
-  });  
+$app->get('/buy_with/:id', function($id) use ($app) {
+  
 });
+
+
+// Recomendation: Viewed with
+
+$app->get('/view_with/:id', function($id) use ($app) {
+
+});
+
+
+// Recomendation: Added to cart with
+
+$app->get('/cart_with/:id', function($id) use ($app) {
+  
+});  
