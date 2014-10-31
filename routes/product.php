@@ -37,3 +37,23 @@ $app->get('/:id', function($id) use ($app) {
     'result'=>$result,
   ]));
 });
+
+
+// Recomendations
+
+$app->group('/recomend/', function() use ($app) {
+  // Bought with
+  $app->get('/buy_with/:id', function($id) use ($app) {
+    
+  });
+
+  // Viewed with
+  $app->get('/view_with/:id', function($id) use ($app) {
+    
+  });
+
+  // Added to cart with
+  $app->get('/cart_with/:id', function($id) use ($app) {
+    
+  });  
+});
