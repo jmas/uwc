@@ -149,7 +149,7 @@ h3 {
 
 
 #app {
-	max-width: 1500px;
+	max-width: 1650px;
 	margin: 0 auto;
 }
 
@@ -222,4 +222,8 @@ h3 {
 	width: 230px;
 	float: left;
 	margin: 0 25px 25px 0;
+}
+
+#product-view-more {
+	margin-bottom: 25px;
 }
