@@ -14,6 +14,7 @@ $app->get('/', function() use ($app) {
 
 });
 
+
 // Delete one or more products
 
 $app->delete('/:id', function() use ($app) {
