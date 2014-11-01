@@ -1,0 +1,13 @@
+<div class="product-item">
+  <a class="product-image" href="#/product/{{id}}">
+    <img src="{{image}}" alt="{{name}}" />
+    {{#amount}}
+    <div class="amount">{{amount}}</div>
+    {{/amount}}
+  </a>
+  <div class="product-summary">
+    <a class="name" href="#/product/{{id}}">{{name}}</a>
+    <div class="price">{{price}}</div>
+    <span class="action-btn accept" data-cart="{{id}}">В корзину</span>
+  </div>
+</div>

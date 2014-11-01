@@ -1,0 +1,3 @@
+<div id="cart-product-list" class="product-list">
+  {{{products}}}
+</div>

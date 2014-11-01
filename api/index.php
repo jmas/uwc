@@ -31,6 +31,7 @@ try {
 // Get and set user.
 
 $app->hook('slim.before.router', function () use ($app) {
+  // If user is not defined - create new user
   if (! isset($_SESSION['user_id'])) {
     $sql = 'INSERT INTO user(session_key) VALUES(:session_key)';
 
@@ -41,6 +42,18 @@ $app->hook('slim.before.router', function () use ($app) {
     $userId = $app->db->lastInsertId();
 
     $_SESSION['user_id'] = $userId;
+  }
+
+  // If order is not difined at session - create new order
+  if (empty($_SESSION['order_id'])) {
+    $userId = $_SESSION['user_id'];
+    $sql = 'INSERT INTO user_order(user_id) VALUES(:userId)';
+    $stmt = $app->db->prepare($sql);
+    if ($stmt->execute([ ':userId'=>$userId ]) === false) {
+      $app->halt(503, 'Query id not executable!');
+    }
+    $orderId = $app->db->lastInsertId();
+    $_SESSION['order_id'] = $orderId;
   }
 });
 

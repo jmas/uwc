@@ -10,7 +10,7 @@ $app->post('/', function() use ($app) {
 });
 
 
-// Add one or more products
+// Add one product with specific amount to order
 
 $app->post('/products/:productId', function($productId) use ($app) {
   $amount = $app->request->params('amount', 1);
@@ -18,6 +18,8 @@ $app->post('/products/:productId', function($productId) use ($app) {
   if (empty($_SESSION['order_id'])) {
     $app->halt(503, 'Order is not defined in current session!');
   }
+
+  $orderId = $_SESSION['order_id'];
 
   $sql = 'INSERT INTO order_product(order_id, product_id, amount) VALUES(:orderId, :productId, :amount)';
 
@@ -38,24 +40,9 @@ $app->post('/products/:productId', function($productId) use ($app) {
 // List of products
 
 $app->get('/products', function() use ($app) {
-  // If order is not difined at session - create new order
   if (empty($_SESSION['order_id'])) {
-    $userId = $_SESSION['user_id'];
-
-    $sql = 'INSERT INTO user_order(user_id) VALUES(:userId)';
-
-    $stmt = $app->db->prepare($sql);
-
-    if ($stmt->execute([ ':userId'=>$userId ]) === false) {
-      $app->halt(503, 'Query id not executable!');
-    }
-
-    $orderId = $app->db->lastInsertId();
-
-    $_SESSION['order_id'] = $orderId;
+    $app->halt(503, 'Order is not defined in current session!');
   }
-
-  // Select order products
 
   $orderId = $_SESSION['order_id'];
 
@@ -81,6 +68,8 @@ $app->delete('/products/:productId', function() use ($app) {
   if (empty($_SESSION['order_id'])) {
     $app->halt(503, 'Order is not defined in current session!');
   }
+
+  $orderId = $_SESSION['order_id'];
 
   $sql = 'DELETE FROM order_product WHERE prduct_id=:productId AND order_id=:orderId';
 

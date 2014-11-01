@@ -6,7 +6,8 @@
 if (typeof console === 'undefined') {
   window.console = console = {
     log: function() {},
-    error: function() {}
+    error: function() {},
+    warning: function() {}
   };
 }
 
@@ -16,13 +17,15 @@ if (typeof console === 'undefined') {
 var Router = require('component/router');
 var Emitter = require('component/emitter');
 
-var productsPageFn = require('./pages/products.js');
-var productPageFn = require('./pages/product.js');
+var productsPartFn = require('./parts/products.js');
+var productPartFn = require('./parts/product.js');
+var cartPartFn = require('./parts/cart.js');
 
 
-// Local varibles
+// Local vars
 
-var pagesEl = document.getElementById('page-list');
+var pageListEl = document.getElementById('page-list');
+var cartContentEl = document.getElementById('cart-content');
 var pagesEls = [];
 var emitter = new Emitter;
 var router = new Router;
@@ -33,10 +36,13 @@ var router = new Router;
 function addPage(name, bootstrapFn) {
   var el = document.createElement('DIV');
   el.setAttribute('class', 'page-item');
+  el.setAttribute('data-page', name);
+  
   if (typeof bootstrapFn === 'function') {
     bootstrapFn(el, emitter);
   }
-  pagesEl.appendChild(el);
+
+  pageListEl.appendChild(el);
   pagesEls.push({
     name: name,
     el: el
@@ -44,17 +50,13 @@ function addPage(name, bootstrapFn) {
 }
 
 function activatePage(name) {
-  if (typeof pagesEls[name] === 'undefined') {
-    return;
-  }
-
   for (var item,i=0,len=pagesEls.length; i<len; i++) {
     item = pagesEls[i];
 
     if (item.name === name) {
-      pagesEls[i].el.classList.add('active');
+      item.el.classList.add('active');
     } else {
-      pagesEls[i].el.classList.remove('active');
+      item.el.classList.remove('active');
     }
   }
 
@@ -62,23 +64,34 @@ function activatePage(name) {
 }
 
 function registerRouting() {
-  router.get('/', function() {
-      activatePage('products');
-      emitter.emit('page.activated.products');
-    });
-
-  router.get('/product/:id', function(id) {
-      activatePage('product');
-      emitter.emit('page.activated.product', id);
-    });
-
   document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
-    var route = event.target.getAttribute('data-route');
+    var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
+    var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
+
+    if (alternateRoute === null) {
+      var node = event.target.parentNode;
+      var len = 0;
+
+      while (node) {
+        if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
+          alternateRoute = node.getAttribute('href');
+          break;
+        }
+
+        if (len > 10) {
+          break;
+        }
+
+        node = node.parentNode;
+        len++;
+      }
+    }
+
+    if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
+      route = alternateRoute.substring(1);
+    }
 
     if (route !== null) {
-      event.preventDefault();
-      event.stopPropagation();
-
       router.dispatch(route);
     }
   }, false);
@@ -91,16 +104,38 @@ function dispatchRouting() {
     loc = '/';
   }
   
-  console.log('dispatch location: ' + loc);
+  console.log('dispatch start location: ', loc);
   
   router.dispatch(loc);
+}
+
+function registerCart() {
+  var el = document.createElement('DIV');
+  
+  if (typeof cartPartFn === 'function') {
+    cartPartFn(el, emitter);
+  }
+
+  pageListEl.appendChild(el);
 }
 
 
 // Bootstrap
 
-addPage('products', productsPageFn);
-addPage('product', productPageFn);
+addPage('products', productsPartFn);
+addPage('product', productPartFn);
+
+registerCart();
+
+router.get('/', function() {
+  activatePage('products');
+  emitter.emit('page.activated.products');
+});
+
+router.get('/product/:id', function(id) {
+  activatePage('product');
+  emitter.emit('page.activated.product', id);
+});
 
 registerRouting();
 dispatchRouting();

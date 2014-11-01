@@ -91,7 +91,8 @@
 if (typeof console === 'undefined') {
   window.console = console = {
     log: function() {},
-    error: function() {}
+    error: function() {},
+    warning: function() {}
   };
 }
 
@@ -101,13 +102,15 @@ if (typeof console === 'undefined') {
 var Router = require('component/router');
 var Emitter = require('component/emitter');
 
-var productsPageFn = require('./pages/products.js');
-var productPageFn = require('./pages/product.js');
+var productsPartFn = require('./parts/products.js');
+var productPartFn = require('./parts/product.js');
+var cartPartFn = require('./parts/cart.js');
 
 
-// Local varibles
+// Local vars
 
-var pagesEl = document.getElementById('page-list');
+var pageListEl = document.getElementById('page-list');
+var cartContentEl = document.getElementById('cart-content');
 var pagesEls = [];
 var emitter = new Emitter;
 var router = new Router;
@@ -118,10 +121,13 @@ var router = new Router;
 function addPage(name, bootstrapFn) {
   var el = document.createElement('DIV');
   el.setAttribute('class', 'page-item');
+  el.setAttribute('data-page', name);
+  
   if (typeof bootstrapFn === 'function') {
     bootstrapFn(el, emitter);
   }
-  pagesEl.appendChild(el);
+
+  pageListEl.appendChild(el);
   pagesEls.push({
     name: name,
     el: el
@@ -129,17 +135,13 @@ function addPage(name, bootstrapFn) {
 }
 
 function activatePage(name) {
-  if (typeof pagesEls[name] === 'undefined') {
-    return;
-  }
-
   for (var item,i=0,len=pagesEls.length; i<len; i++) {
     item = pagesEls[i];
 
     if (item.name === name) {
-      pagesEls[i].el.classList.add('active');
+      item.el.classList.add('active');
     } else {
-      pagesEls[i].el.classList.remove('active');
+      item.el.classList.remove('active');
     }
   }
 
@@ -147,23 +149,34 @@ function activatePage(name) {
 }
 
 function registerRouting() {
-  router.get('/', function() {
-      activatePage('products');
-      emitter.emit('page.activated.products');
-    });
-
-  router.get('/product/:id', function(id) {
-      activatePage('product');
-      emitter.emit('page.activated.product', id);
-    });
-
   document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
-    var route = event.target.getAttribute('data-route');
+    var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
+    var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
+
+    if (alternateRoute === null) {
+      var node = event.target.parentNode;
+      var len = 0;
+
+      while (node) {
+        if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
+          alternateRoute = node.getAttribute('href');
+          break;
+        }
+
+        if (len > 10) {
+          break;
+        }
+
+        node = node.parentNode;
+        len++;
+      }
+    }
+
+    if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
+      route = alternateRoute.substring(1);
+    }
 
     if (route !== null) {
-      event.preventDefault();
-      event.stopPropagation();
-
       router.dispatch(route);
     }
   }, false);
@@ -176,20 +189,42 @@ function dispatchRouting() {
     loc = '/';
   }
   
-  console.log('dispatch location: ' + loc);
+  console.log('dispatch start location: ', loc);
   
   router.dispatch(loc);
+}
+
+function registerCart() {
+  var el = document.createElement('DIV');
+  
+  if (typeof cartPartFn === 'function') {
+    cartPartFn(el, emitter);
+  }
+
+  pageListEl.appendChild(el);
 }
 
 
 // Bootstrap
 
-addPage('products', productsPageFn);
-addPage('product', productPageFn);
+addPage('products', productsPartFn);
+addPage('product', productPartFn);
+
+registerCart();
+
+router.get('/', function() {
+  activatePage('products');
+  emitter.emit('page.activated.products');
+});
+
+router.get('/product/:id', function(id) {
+  activatePage('product');
+  emitter.emit('page.activated.product', id);
+});
 
 registerRouting();
 dispatchRouting();
-}, {"component/router":2,"component/emitter":3,"./pages/products.js":4,"./pages/product.js":5}],
+}, {"component/router":2,"component/emitter":3,"./parts/products.js":4,"./parts/product.js":5,"./parts/cart.js":6}],
 2: [function(require, module, exports) {
 
 /**
@@ -278,8 +313,8 @@ Router.prototype.teardown = function(){
   route.call('after', this.args);
 };
 
-}, {"route":6}],
-6: [function(require, module, exports) {
+}, {"route":7}],
+7: [function(require, module, exports) {
 
 /**
  * Module dependencies.
@@ -393,8 +428,8 @@ Route.prototype.match = function(path){
   return params;
 };
 
-}, {"path-to-regexp":7}],
-7: [function(require, module, exports) {
+}, {"path-to-regexp":8}],
+8: [function(require, module, exports) {
 /**
  * Expose `pathtoRegexp`.
  */
@@ -735,22 +770,2043 @@ Emitter.prototype.hasListeners = function(event){
 4: [function(require, module, exports) {
 "use strict";
 
+
+// Requires
+
+var dom = require('../dom.js');
+var storeService = require('../store-service.js');
+
+var productsTemplate = require('../templates/products.hg');
+var productItemTemplate = require('../templates/product-item.hg');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+var products = storeService.products;
+
+
+// Functions
+
+function render() {
+	var items = [];
+
+	for (var i=0,len=products.length; i<len; i++) {
+		items.push(productItemTemplate.render(products.get(i)));
+	}
+
+	var html = productsTemplate.render({
+		products: items.join('')
+	});
+
+	dom.replaceHtml(partEl, html);
+}
+
+
+// Bootstrap
+
+products.on('change', render);
+
+
+// Exports
+
 module.exports = function(rootEl, emitter) {
 	console.log('products bootstrap.');
 
+	rootEl.appendChild(partEl);
+
 	emitter.on('page.activated.products', function(name) {
+		storeService.loadProducts();
+
 		console.log('activated products page');
 	});
 };
+}, {"../dom.js":9,"../store-service.js":10,"../templates/products.hg":11,"../templates/product-item.hg":12}],
+9: [function(require, module, exports) {
+"use strict";
+
+
+module.exports = {
+	removeChildNodes: function(node) {
+		if (! node) {
+			console.warn('node is wrong.');
+			return;
+		}
+
+		while (node.firstChild) {
+			node.removeChild(node.firstChild);	
+		}
+	},
+	replaceHtml: function(node, html) {
+		this.removeChildNodes(node);
+		this.html(node, html);
+	},
+	appendHtml: function(node, html) {
+		this.html(node, html, 'beforeend');
+	},
+	html: function(node, html, pos) {
+		pos = pos || 'beforeend';
+
+		if (! html instanceof String) {
+			console.warn('html is not string.');
+			return;
+		}
+
+		if (! node) {
+			console.warn('node is wrong.');
+			return;
+		}
+
+		node.insertAdjacentHTML(pos, html);
+	}
+};
 }, {}],
+10: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var request = require('visionmedia/superagent');
+var Arr = require('jmas/arr');
+var Emitter = require('component/emitter');
+
+// Exports
+
+module.exports = new Emitter({
+  products: new Arr,
+  cartProducts: new Arr,
+  
+  addProductToCart: function(productId) {
+    var _this = this;
+
+    request.post('/api/order/products/' + productId).end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.loadCartProducts();
+    });
+  },
+
+  loadCartProducts: function() {
+    request.get('/api/order/products').end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.cartProducts.remove();
+      _this.cartProducts.insert(response.body.result);
+    });
+  },
+  
+  loadProducts: function() {
+    var _this = this;
+
+    request.get('/api/product').end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.products.remove();
+      _this.products.insert(response.body.result);
+    });
+  }
+});
+}, {"visionmedia/superagent":13,"jmas/arr":14,"component/emitter":3}],
+13: [function(require, module, exports) {
+/**
+ * Module dependencies.
+ */
+
+var Emitter = require('emitter');
+var reduce = require('reduce');
+
+/**
+ * Root reference for iframes.
+ */
+
+var root = 'undefined' == typeof window
+  ? this
+  : window;
+
+/**
+ * Noop.
+ */
+
+function noop(){};
+
+/**
+ * Check if `obj` is a host object,
+ * we don't want to serialize these :)
+ *
+ * TODO: future proof, move to compoent land
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isHost(obj) {
+  var str = {}.toString.call(obj);
+
+  switch (str) {
+    case '[object File]':
+    case '[object Blob]':
+    case '[object FormData]':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Determine XHR.
+ */
+
+function getXHR() {
+  if (root.XMLHttpRequest
+    && ('file:' != root.location.protocol || !root.ActiveXObject)) {
+    return new XMLHttpRequest;
+  } else {
+    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP.6.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP.3.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch(e) {}
+  }
+  return false;
+}
+
+/**
+ * Removes leading and trailing whitespace, added to support IE.
+ *
+ * @param {String} s
+ * @return {String}
+ * @api private
+ */
+
+var trim = ''.trim
+  ? function(s) { return s.trim(); }
+  : function(s) { return s.replace(/(^\s*|\s*$)/g, ''); };
+
+/**
+ * Check if `obj` is an object.
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isObject(obj) {
+  return obj === Object(obj);
+}
+
+/**
+ * Serialize the given `obj`.
+ *
+ * @param {Object} obj
+ * @return {String}
+ * @api private
+ */
+
+function serialize(obj) {
+  if (!isObject(obj)) return obj;
+  var pairs = [];
+  for (var key in obj) {
+    if (null != obj[key]) {
+      pairs.push(encodeURIComponent(key)
+        + '=' + encodeURIComponent(obj[key]));
+    }
+  }
+  return pairs.join('&');
+}
+
+/**
+ * Expose serialization method.
+ */
+
+ request.serializeObject = serialize;
+
+ /**
+  * Parse the given x-www-form-urlencoded `str`.
+  *
+  * @param {String} str
+  * @return {Object}
+  * @api private
+  */
+
+function parseString(str) {
+  var obj = {};
+  var pairs = str.split('&');
+  var parts;
+  var pair;
+
+  for (var i = 0, len = pairs.length; i < len; ++i) {
+    pair = pairs[i];
+    parts = pair.split('=');
+    obj[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+  }
+
+  return obj;
+}
+
+/**
+ * Expose parser.
+ */
+
+request.parseString = parseString;
+
+/**
+ * Default MIME type map.
+ *
+ *     superagent.types.xml = 'application/xml';
+ *
+ */
+
+request.types = {
+  html: 'text/html',
+  json: 'application/json',
+  xml: 'application/xml',
+  urlencoded: 'application/x-www-form-urlencoded',
+  'form': 'application/x-www-form-urlencoded',
+  'form-data': 'application/x-www-form-urlencoded'
+};
+
+/**
+ * Default serialization map.
+ *
+ *     superagent.serialize['application/xml'] = function(obj){
+ *       return 'generated xml here';
+ *     };
+ *
+ */
+
+ request.serialize = {
+   'application/x-www-form-urlencoded': serialize,
+   'application/json': JSON.stringify
+ };
+
+ /**
+  * Default parsers.
+  *
+  *     superagent.parse['application/xml'] = function(str){
+  *       return { object parsed from str };
+  *     };
+  *
+  */
+
+request.parse = {
+  'application/x-www-form-urlencoded': parseString,
+  'application/json': JSON.parse
+};
+
+/**
+ * Parse the given header `str` into
+ * an object containing the mapped fields.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+function parseHeader(str) {
+  var lines = str.split(/\r?\n/);
+  var fields = {};
+  var index;
+  var line;
+  var field;
+  var val;
+
+  lines.pop(); // trailing CRLF
+
+  for (var i = 0, len = lines.length; i < len; ++i) {
+    line = lines[i];
+    index = line.indexOf(':');
+    field = line.slice(0, index).toLowerCase();
+    val = trim(line.slice(index + 1));
+    fields[field] = val;
+  }
+
+  return fields;
+}
+
+/**
+ * Return the mime type for the given `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+function type(str){
+  return str.split(/ *; */).shift();
+};
+
+/**
+ * Return header field parameters.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+function params(str){
+  return reduce(str.split(/ *; */), function(obj, str){
+    var parts = str.split(/ *= */)
+      , key = parts.shift()
+      , val = parts.shift();
+
+    if (key && val) obj[key] = val;
+    return obj;
+  }, {});
+};
+
+/**
+ * Initialize a new `Response` with the given `xhr`.
+ *
+ *  - set flags (.ok, .error, etc)
+ *  - parse header
+ *
+ * Examples:
+ *
+ *  Aliasing `superagent` as `request` is nice:
+ *
+ *      request = superagent;
+ *
+ *  We can use the promise-like API, or pass callbacks:
+ *
+ *      request.get('/').end(function(res){});
+ *      request.get('/', function(res){});
+ *
+ *  Sending data can be chained:
+ *
+ *      request
+ *        .post('/user')
+ *        .send({ name: 'tj' })
+ *        .end(function(res){});
+ *
+ *  Or passed to `.send()`:
+ *
+ *      request
+ *        .post('/user')
+ *        .send({ name: 'tj' }, function(res){});
+ *
+ *  Or passed to `.post()`:
+ *
+ *      request
+ *        .post('/user', { name: 'tj' })
+ *        .end(function(res){});
+ *
+ * Or further reduced to a single call for simple cases:
+ *
+ *      request
+ *        .post('/user', { name: 'tj' }, function(res){});
+ *
+ * @param {XMLHTTPRequest} xhr
+ * @param {Object} options
+ * @api private
+ */
+
+function Response(req, options) {
+  options = options || {};
+  this.req = req;
+  this.xhr = this.req.xhr;
+  this.text = this.xhr.responseText;
+  this.setStatusProperties(this.xhr.status);
+  this.header = this.headers = parseHeader(this.xhr.getAllResponseHeaders());
+  // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
+  // getResponseHeader still works. so we get content-type even if getting
+  // other headers fails.
+  this.header['content-type'] = this.xhr.getResponseHeader('content-type');
+  this.setHeaderProperties(this.header);
+  this.body = this.req.method != 'HEAD'
+    ? this.parseBody(this.text)
+    : null;
+}
+
+/**
+ * Get case-insensitive `field` value.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api public
+ */
+
+Response.prototype.get = function(field){
+  return this.header[field.toLowerCase()];
+};
+
+/**
+ * Set header related properties:
+ *
+ *   - `.type` the content type without params
+ *
+ * A response of "Content-Type: text/plain; charset=utf-8"
+ * will provide you with a `.type` of "text/plain".
+ *
+ * @param {Object} header
+ * @api private
+ */
+
+Response.prototype.setHeaderProperties = function(header){
+  // content-type
+  var ct = this.header['content-type'] || '';
+  this.type = type(ct);
+
+  // params
+  var obj = params(ct);
+  for (var key in obj) this[key] = obj[key];
+};
+
+/**
+ * Parse the given body `str`.
+ *
+ * Used for auto-parsing of bodies. Parsers
+ * are defined on the `superagent.parse` object.
+ *
+ * @param {String} str
+ * @return {Mixed}
+ * @api private
+ */
+
+Response.prototype.parseBody = function(str){
+  var parse = request.parse[this.type];
+  return parse && str && str.length
+    ? parse(str)
+    : null;
+};
+
+/**
+ * Set flags such as `.ok` based on `status`.
+ *
+ * For example a 2xx response will give you a `.ok` of __true__
+ * whereas 5xx will be __false__ and `.error` will be __true__. The
+ * `.clientError` and `.serverError` are also available to be more
+ * specific, and `.statusType` is the class of error ranging from 1..5
+ * sometimes useful for mapping respond colors etc.
+ *
+ * "sugar" properties are also defined for common cases. Currently providing:
+ *
+ *   - .noContent
+ *   - .badRequest
+ *   - .unauthorized
+ *   - .notAcceptable
+ *   - .notFound
+ *
+ * @param {Number} status
+ * @api private
+ */
+
+Response.prototype.setStatusProperties = function(status){
+  var type = status / 100 | 0;
+
+  // status / class
+  this.status = status;
+  this.statusType = type;
+
+  // basics
+  this.info = 1 == type;
+  this.ok = 2 == type;
+  this.clientError = 4 == type;
+  this.serverError = 5 == type;
+  this.error = (4 == type || 5 == type)
+    ? this.toError()
+    : false;
+
+  // sugar
+  this.accepted = 202 == status;
+  this.noContent = 204 == status || 1223 == status;
+  this.badRequest = 400 == status;
+  this.unauthorized = 401 == status;
+  this.notAcceptable = 406 == status;
+  this.notFound = 404 == status;
+  this.forbidden = 403 == status;
+};
+
+/**
+ * Return an `Error` representative of this response.
+ *
+ * @return {Error}
+ * @api public
+ */
+
+Response.prototype.toError = function(){
+  var req = this.req;
+  var method = req.method;
+  var url = req.url;
+
+  var msg = 'cannot ' + method + ' ' + url + ' (' + this.status + ')';
+  var err = new Error(msg);
+  err.status = this.status;
+  err.method = method;
+  err.url = url;
+
+  return err;
+};
+
+/**
+ * Expose `Response`.
+ */
+
+request.Response = Response;
+
+/**
+ * Initialize a new `Request` with the given `method` and `url`.
+ *
+ * @param {String} method
+ * @param {String} url
+ * @api public
+ */
+
+function Request(method, url) {
+  var self = this;
+  Emitter.call(this);
+  this._query = this._query || [];
+  this.method = method;
+  this.url = url;
+  this.header = {};
+  this._header = {};
+  this.on('end', function(){
+    try {
+      var res = new Response(self);
+      if ('HEAD' == method) res.text = null;
+      self.callback(null, res);
+    } catch(e) {
+      var err = new Error('Parser is unable to parse the response');
+      err.parse = true;
+      err.original = e;
+      self.callback(err);
+    }
+  });
+}
+
+/**
+ * Mixin `Emitter`.
+ */
+
+Emitter(Request.prototype);
+
+/**
+ * Allow for extension
+ */
+
+Request.prototype.use = function(fn) {
+  fn(this);
+  return this;
+}
+
+/**
+ * Set timeout to `ms`.
+ *
+ * @param {Number} ms
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.timeout = function(ms){
+  this._timeout = ms;
+  return this;
+};
+
+/**
+ * Clear previous timeout.
+ *
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.clearTimeout = function(){
+  this._timeout = 0;
+  clearTimeout(this._timer);
+  return this;
+};
+
+/**
+ * Abort the request, and clear potential timeout.
+ *
+ * @return {Request}
+ * @api public
+ */
+
+Request.prototype.abort = function(){
+  if (this.aborted) return;
+  this.aborted = true;
+  this.xhr.abort();
+  this.clearTimeout();
+  this.emit('abort');
+  return this;
+};
+
+/**
+ * Set header `field` to `val`, or multiple fields with one object.
+ *
+ * Examples:
+ *
+ *      req.get('/')
+ *        .set('Accept', 'application/json')
+ *        .set('X-API-Key', 'foobar')
+ *        .end(callback);
+ *
+ *      req.get('/')
+ *        .set({ Accept: 'application/json', 'X-API-Key': 'foobar' })
+ *        .end(callback);
+ *
+ * @param {String|Object} field
+ * @param {String} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.set = function(field, val){
+  if (isObject(field)) {
+    for (var key in field) {
+      this.set(key, field[key]);
+    }
+    return this;
+  }
+  this._header[field.toLowerCase()] = val;
+  this.header[field] = val;
+  return this;
+};
+
+/**
+ * Remove header `field`.
+ *
+ * Example:
+ *
+ *      req.get('/')
+ *        .unset('User-Agent')
+ *        .end(callback);
+ *
+ * @param {String} field
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.unset = function(field){
+  delete this._header[field.toLowerCase()];
+  delete this.header[field];
+  return this;
+};
+
+/**
+ * Get case-insensitive header `field` value.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api private
+ */
+
+Request.prototype.getHeader = function(field){
+  return this._header[field.toLowerCase()];
+};
+
+/**
+ * Set Content-Type to `type`, mapping values from `request.types`.
+ *
+ * Examples:
+ *
+ *      superagent.types.xml = 'application/xml';
+ *
+ *      request.post('/')
+ *        .type('xml')
+ *        .send(xmlstring)
+ *        .end(callback);
+ *
+ *      request.post('/')
+ *        .type('application/xml')
+ *        .send(xmlstring)
+ *        .end(callback);
+ *
+ * @param {String} type
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.type = function(type){
+  this.set('Content-Type', request.types[type] || type);
+  return this;
+};
+
+/**
+ * Set Accept to `type`, mapping values from `request.types`.
+ *
+ * Examples:
+ *
+ *      superagent.types.json = 'application/json';
+ *
+ *      request.get('/agent')
+ *        .accept('json')
+ *        .end(callback);
+ *
+ *      request.get('/agent')
+ *        .accept('application/json')
+ *        .end(callback);
+ *
+ * @param {String} accept
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.accept = function(type){
+  this.set('Accept', request.types[type] || type);
+  return this;
+};
+
+/**
+ * Set Authorization field value with `user` and `pass`.
+ *
+ * @param {String} user
+ * @param {String} pass
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.auth = function(user, pass){
+  var str = btoa(user + ':' + pass);
+  this.set('Authorization', 'Basic ' + str);
+  return this;
+};
+
+/**
+* Add query-string `val`.
+*
+* Examples:
+*
+*   request.get('/shoes')
+*     .query('size=10')
+*     .query({ color: 'blue' })
+*
+* @param {Object|String} val
+* @return {Request} for chaining
+* @api public
+*/
+
+Request.prototype.query = function(val){
+  if ('string' != typeof val) val = serialize(val);
+  if (val) this._query.push(val);
+  return this;
+};
+
+/**
+ * Write the field `name` and `val` for "multipart/form-data"
+ * request bodies.
+ *
+ * ``` js
+ * request.post('/upload')
+ *   .field('foo', 'bar')
+ *   .end(callback);
+ * ```
+ *
+ * @param {String} name
+ * @param {String|Blob|File} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.field = function(name, val){
+  if (!this._formData) this._formData = new FormData();
+  this._formData.append(name, val);
+  return this;
+};
+
+/**
+ * Queue the given `file` as an attachment to the specified `field`,
+ * with optional `filename`.
+ *
+ * ``` js
+ * request.post('/upload')
+ *   .attach(new Blob(['<a id="a"><b id="b">hey!</b></a>'], { type: "text/html"}))
+ *   .end(callback);
+ * ```
+ *
+ * @param {String} field
+ * @param {Blob|File} file
+ * @param {String} filename
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.attach = function(field, file, filename){
+  if (!this._formData) this._formData = new FormData();
+  this._formData.append(field, file, filename);
+  return this;
+};
+
+/**
+ * Send `data`, defaulting the `.type()` to "json" when
+ * an object is given.
+ *
+ * Examples:
+ *
+ *       // querystring
+ *       request.get('/search')
+ *         .end(callback)
+ *
+ *       // multiple data "writes"
+ *       request.get('/search')
+ *         .send({ search: 'query' })
+ *         .send({ range: '1..5' })
+ *         .send({ order: 'desc' })
+ *         .end(callback)
+ *
+ *       // manual json
+ *       request.post('/user')
+ *         .type('json')
+ *         .send('{"name":"tj"})
+ *         .end(callback)
+ *
+ *       // auto json
+ *       request.post('/user')
+ *         .send({ name: 'tj' })
+ *         .end(callback)
+ *
+ *       // manual x-www-form-urlencoded
+ *       request.post('/user')
+ *         .type('form')
+ *         .send('name=tj')
+ *         .end(callback)
+ *
+ *       // auto x-www-form-urlencoded
+ *       request.post('/user')
+ *         .type('form')
+ *         .send({ name: 'tj' })
+ *         .end(callback)
+ *
+ *       // defaults to x-www-form-urlencoded
+  *      request.post('/user')
+  *        .send('name=tobi')
+  *        .send('species=ferret')
+  *        .end(callback)
+ *
+ * @param {String|Object} data
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.send = function(data){
+  var obj = isObject(data);
+  var type = this.getHeader('Content-Type');
+
+  // merge
+  if (obj && isObject(this._data)) {
+    for (var key in data) {
+      this._data[key] = data[key];
+    }
+  } else if ('string' == typeof data) {
+    if (!type) this.type('form');
+    type = this.getHeader('Content-Type');
+    if ('application/x-www-form-urlencoded' == type) {
+      this._data = this._data
+        ? this._data + '&' + data
+        : data;
+    } else {
+      this._data = (this._data || '') + data;
+    }
+  } else {
+    this._data = data;
+  }
+
+  if (!obj) return this;
+  if (!type) this.type('json');
+  return this;
+};
+
+/**
+ * Invoke the callback with `err` and `res`
+ * and handle arity check.
+ *
+ * @param {Error} err
+ * @param {Response} res
+ * @api private
+ */
+
+Request.prototype.callback = function(err, res){
+  var fn = this._callback;
+  if (2 == fn.length) return fn(err, res);
+  if (err) return this.emit('error', err);
+  fn(res);
+};
+
+/**
+ * Invoke callback with x-domain error.
+ *
+ * @api private
+ */
+
+Request.prototype.crossDomainError = function(){
+  var err = new Error('Origin is not allowed by Access-Control-Allow-Origin');
+  err.crossDomain = true;
+  this.callback(err);
+};
+
+/**
+ * Invoke callback with timeout error.
+ *
+ * @api private
+ */
+
+Request.prototype.timeoutError = function(){
+  var timeout = this._timeout;
+  var err = new Error('timeout of ' + timeout + 'ms exceeded');
+  err.timeout = timeout;
+  this.callback(err);
+};
+
+/**
+ * Enable transmission of cookies with x-domain requests.
+ *
+ * Note that for this to work the origin must not be
+ * using "Access-Control-Allow-Origin" with a wildcard,
+ * and also must set "Access-Control-Allow-Credentials"
+ * to "true".
+ *
+ * @api public
+ */
+
+Request.prototype.withCredentials = function(){
+  this._withCredentials = true;
+  return this;
+};
+
+/**
+ * Initiate request, invoking callback `fn(res)`
+ * with an instanceof `Response`.
+ *
+ * @param {Function} fn
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.end = function(fn){
+  var self = this;
+  var xhr = this.xhr = getXHR();
+  var query = this._query.join('&');
+  var timeout = this._timeout;
+  var data = this._formData || this._data;
+
+  // store callback
+  this._callback = fn || noop;
+
+  // state change
+  xhr.onreadystatechange = function(){
+    if (4 != xhr.readyState) return;
+    if (0 == xhr.status) {
+      if (self.aborted) return self.timeoutError();
+      return self.crossDomainError();
+    }
+    self.emit('end');
+  };
+
+  // progress
+  if (xhr.upload) {
+    xhr.upload.onprogress = function(e){
+      e.percent = e.loaded / e.total * 100;
+      self.emit('progress', e);
+    };
+  }
+
+  // timeout
+  if (timeout && !this._timer) {
+    this._timer = setTimeout(function(){
+      self.abort();
+    }, timeout);
+  }
+
+  // querystring
+  if (query) {
+    query = request.serializeObject(query);
+    this.url += ~this.url.indexOf('?')
+      ? '&' + query
+      : '?' + query;
+  }
+
+  // initiate request
+  xhr.open(this.method, this.url, true);
+
+  // CORS
+  if (this._withCredentials) xhr.withCredentials = true;
+
+  // body
+  if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !isHost(data)) {
+    // serialize stuff
+    var serialize = request.serialize[this.getHeader('Content-Type')];
+    if (serialize) data = serialize(data);
+  }
+
+  // set header fields
+  for (var field in this.header) {
+    if (null == this.header[field]) continue;
+    xhr.setRequestHeader(field, this.header[field]);
+  }
+
+  // send stuff
+  this.emit('request', this);
+  xhr.send(data);
+  return this;
+};
+
+/**
+ * Expose `Request`.
+ */
+
+request.Request = Request;
+
+/**
+ * Issue a request:
+ *
+ * Examples:
+ *
+ *    request('GET', '/users').end(callback)
+ *    request('/users').end(callback)
+ *    request('/users', callback)
+ *
+ * @param {String} method
+ * @param {String|Function} url or callback
+ * @return {Request}
+ * @api public
+ */
+
+function request(method, url) {
+  // callback
+  if ('function' == typeof url) {
+    return new Request('GET', method).end(url);
+  }
+
+  // url first
+  if (1 == arguments.length) {
+    return new Request('GET', method);
+  }
+
+  return new Request(method, url);
+}
+
+/**
+ * GET `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} data or fn
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.get = function(url, data, fn){
+  var req = request('GET', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.query(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * HEAD `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} data or fn
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.head = function(url, data, fn){
+  var req = request('HEAD', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * DELETE `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.del = function(url, fn){
+  var req = request('DELETE', url);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * PATCH `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed} data
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.patch = function(url, data, fn){
+  var req = request('PATCH', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * POST `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed} data
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.post = function(url, data, fn){
+  var req = request('POST', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * PUT `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} data or fn
+ * @param {Function} fn
+ * @return {Request}
+ * @api public
+ */
+
+request.put = function(url, data, fn){
+  var req = request('PUT', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * Expose `request`.
+ */
+
+module.exports = request;
+
+}, {"emitter":3,"reduce":15}],
+15: [function(require, module, exports) {
+
+/**
+ * Reduce `arr` with `fn`.
+ *
+ * @param {Array} arr
+ * @param {Function} fn
+ * @param {Mixed} initial
+ *
+ * TODO: combatible error handling?
+ */
+
+module.exports = function(arr, fn, initial){  
+  var idx = 0;
+  var len = arr.length;
+  var curr = arguments.length == 3
+    ? initial
+    : arr[idx++];
+
+  while (idx < len) {
+    curr = fn.call(null, curr, arr[idx], ++idx, arr);
+  }
+  
+  return curr;
+};
+}, {}],
+14: [function(require, module, exports) {
+(function(rootScope) {
+  
+  // original Array methods
+  var
+    arrayPop = Array.prototype.pop,
+    arrayPush = Array.prototype.push,
+    arrayReverse = Array.prototype.reverse,
+    arrayShift = Array.prototype.shift,
+    arraySort = Array.prototype.sort,
+    arraySplice = Array.prototype.splice,
+    arrayUnshift = Array.prototype.unshift;
+  
+  /**
+   * Constructor.
+   */
+  function Arr() {
+    var instance = this;
+    
+    if (! instance instanceof Arr) {
+      instance = new Arr();
+    }
+        
+    if (arguments.length === 1 && typeof arguments[0] === 'number' && arguments[0] % 1 === 0) {
+      arrayPush.apply(instance, new Array(arguments[0]));
+    } else {
+      arrayPush.apply(instance, arguments);
+    }
+    
+    instance.events = {};
+    
+    return instance;
+  };
+  
+  // Attach prototype
+  Arr.prototype = [];
+  
+  /**
+   * Attached events.
+   */
+  Arr.prototype.events = {};
+   
+  /**
+   * Get value by index.
+   */
+  Arr.prototype.get = function(index, defaultValue) {
+    return typeof this[index] === 'undefined' ? defaultValue: this[index];
+  };
+   
+  /**
+   * Attach event handler.
+   */
+  Arr.prototype.on = function(eventName, handler) {
+    if (typeof this.events[eventName] === 'undefined') {
+      this.events[eventName] = [];
+    }
+
+    this.events[eventName].push(handler);
+
+    return this;
+  };
+   
+  /**
+   * Trigger event.
+   */
+  Arr.prototype.trigger = function(eventName, args) {
+    args = args || [];
+
+    if (eventName instanceof Array) {
+      for (var k=0, klen=eventName.length; k<klen; k++) {
+        if (typeof this.events[eventName[k]] === 'undefined') {
+          continue;
+        }
+       
+        for (var i=0,len=this.events[eventName[k]].length; i<len; i++) {
+          this.events[eventName[k]][i].apply(this, [args]);
+        }
+      }
+    } else {
+      for (var i=0,len=this.events[eventName].length; i<len; i++) {
+        this.events[eventName][i].apply(this, [args]);
+      }
+    }
+
+    return this;
+  };
+   
+  /**
+   * Update items by handler.
+   */
+  Arr.prototype.update = function(handler) {
+    if (! handler instanceof Function) {
+      throw new Error('handler should be an Function');
+    }
+    
+    var oldValue, newValue, i, result = [];
+   
+    for (i=0,len=this.length; i<len; i++) {
+      oldValue = this[i];
+      newValue = handler.apply(this, [oldValue, i]);
+      
+      if (typeof newValue !== 'undefined') {
+        this[i] = newValue;
+        result.push(newValue);
+      }
+    }
+   
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
+        this.trigger(['change', 'update'], {
+          type: 'update',
+          items: result
+        });
+      }
+    }
+   
+    return this;
+  };
+  
+  /**
+   * Insert array of items.
+   */
+  Arr.prototype.insert = function(items) {
+    if (! items instanceof Array) {
+      throw new Error('items should be an Array');
+    }
+    
+    arrayPush.apply(this, items);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined') {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: items
+      });
+    }
+
+    return this;
+  };
+  
+  /**
+   * Remove items by handler.
+   */
+  Arr.prototype.remove = function(handler) {
+    if (typeof handler === 'undefined') { // drop all items
+      if (this.length > 0) {
+        this.splice(0, this.length);
+      }
+      
+      return this;
+    }
+    
+    if (! handler instanceof Function) {
+      throw new Error('handler should be an Function');
+    }
+    
+    var result = [], stay = [], i;
+
+    for (i=0, len=this.length; i<len; i++) {
+      isRemove = handler.apply(this, [this[i], i]);
+      
+      if (isRemove === true) {
+        result.push(this[i]);
+      } else {
+        stay.push(this[i]);
+      }
+    }
+
+    arraySplice.apply(this, [0, this.length]);
+    arrayPush.apply(this, stay);
+
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined') {
+        this.trigger(['change', 'remove'], {
+          type: 'remove',
+          items: result
+        });
+      }
+    }
+   
+    return this;
+  };
+  
+  /**
+   * Set value by index.
+   */
+  Arr.prototype.set = function(index, value) {
+    if (! index instanceof Number) {
+      throw new Error('index should be an Number');
+    }
+    
+    this[index] = value;
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: [this[index]]
+      });
+    }
+
+    return this;
+  };
+   
+  /**
+   * Removes the last element from an array and returns that element.
+   */
+  Arr.prototype.pop = function() {
+    var result = arrayPop.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+      this.trigger(['change', 'remove'], {
+        type: 'remove',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds one or more elements to the end of an array and returns the new length of the array.
+   */
+  Arr.prototype.push = function() {
+    var result = arrayPush.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: Array.prototype.slice.call(arguments, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Reverses the order of the elements of an array — the first becomes the last, and the last becomes the first.
+   */
+  Arr.prototype.reverse = function() {
+    var result = arrayReverse.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: Array.prototype.slice.call(result, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Removes the first element from an array and returns that element.
+   */
+  Arr.prototype.shift = function() {
+    var result = arrayShift.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+      this.trigger(['change', 'remove'], {
+        type: 'remove',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Sorts the elements of an array in place and returns the array.
+   */
+  Arr.prototype.sort = function() {
+    var result = arraySort.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: Array.prototype.slice.call(result, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds and/or removes elements from an array.
+   */
+  Arr.prototype.splice = function() {
+    var result = arraySplice.apply(this, arguments);
+
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+        this.trigger(['change', 'remove'], {
+          type: 'remove',
+          items: Array.prototype.slice.call(result, 0)
+        });
+      }
+    }
+
+    if (arguments.length > 2) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+        this.trigger(['change', 'insert'], {
+          type: 'insert',
+          items: Array.prototype.slice.call(arguments, 2)
+        });
+      }
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds one or more elements to the front of an array and returns the new length of the array.
+   */
+  Arr.prototype.unshift = function() {
+    var result = arrayUnshift.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+  
+  // exports
+
+  if (typeof module !== 'undefined') {
+    module.exports = Arr;
+  } else {
+    rootScope.Arr = Arr;
+  }
+})(this);
+
+}, {}],
+11: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":16}],
+16: [function(require, module, exports) {
+/*
+ *  Copyright 2011 Twitter, Inc.
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+var Hogan = {};
+
+(function (Hogan) {
+  Hogan.Template = function (codeObj, text, compiler, options) {
+    codeObj = codeObj || {};
+    this.r = codeObj.code || this.r;
+    this.c = compiler;
+    this.options = options || {};
+    this.text = text || '';
+    this.partials = codeObj.partials || {};
+    this.subs = codeObj.subs || {};
+    this.buf = '';
+  }
+
+  Hogan.Template.prototype = {
+    // render: replaced by generated code.
+    r: function (context, partials, indent) { return ''; },
+
+    // variable escaping
+    v: hoganEscape,
+
+    // triple stache
+    t: coerceToString,
+
+    render: function render(context, partials, indent) {
+      return this.ri([context], partials || {}, indent);
+    },
+
+    // render internal -- a hook for overrides that catches partials too
+    ri: function (context, partials, indent) {
+      return this.r(context, partials, indent);
+    },
+
+    // ensurePartial
+    ep: function(symbol, partials) {
+      var partial = this.partials[symbol];
+
+      // check to see that if we've instantiated this partial before
+      var template = partials[partial.name];
+      if (partial.instance && partial.base == template) {
+        return partial.instance;
+      }
+
+      if (typeof template == 'string') {
+        if (!this.c) {
+          throw new Error("No compiler available.");
+        }
+        template = this.c.compile(template, this.options);
+      }
+
+      if (!template) {
+        return null;
+      }
+
+      // We use this to check whether the partials dictionary has changed
+      this.partials[symbol].base = template;
+
+      if (partial.subs) {
+        // Make sure we consider parent template now
+        if (!partials.stackText) partials.stackText = {};
+        for (key in partial.subs) {
+          if (!partials.stackText[key]) {
+            partials.stackText[key] = (this.activeSub !== undefined && partials.stackText[this.activeSub]) ? partials.stackText[this.activeSub] : this.text;
+          }
+        }
+        template = createSpecializedPartial(template, partial.subs, partial.partials,
+          this.stackSubs, this.stackPartials, partials.stackText);
+      }
+      this.partials[symbol].instance = template;
+
+      return template;
+    },
+
+    // tries to find a partial in the current scope and render it
+    rp: function(symbol, context, partials, indent) {
+      var partial = this.ep(symbol, partials);
+      if (!partial) {
+        return '';
+      }
+
+      return partial.ri(context, partials, indent);
+    },
+
+    // render a section
+    rs: function(context, partials, section) {
+      var tail = context[context.length - 1];
+
+      if (!isArray(tail)) {
+        section(context, partials, this);
+        return;
+      }
+
+      for (var i = 0; i < tail.length; i++) {
+        context.push(tail[i]);
+        section(context, partials, this);
+        context.pop();
+      }
+    },
+
+    // maybe start a section
+    s: function(val, ctx, partials, inverted, start, end, tags) {
+      var pass;
+
+      if (isArray(val) && val.length === 0) {
+        return false;
+      }
+
+      if (typeof val == 'function') {
+        val = this.ms(val, ctx, partials, inverted, start, end, tags);
+      }
+
+      pass = !!val;
+
+      if (!inverted && pass && ctx) {
+        ctx.push((typeof val == 'object') ? val : ctx[ctx.length - 1]);
+      }
+
+      return pass;
+    },
+
+    // find values with dotted names
+    d: function(key, ctx, partials, returnFound) {
+      var found,
+          names = key.split('.'),
+          val = this.f(names[0], ctx, partials, returnFound),
+          doModelGet = this.options.modelGet,
+          cx = null;
+
+      if (key === '.' && isArray(ctx[ctx.length - 2])) {
+        val = ctx[ctx.length - 1];
+      } else {
+        for (var i = 1; i < names.length; i++) {
+          found = findInScope(names[i], val, doModelGet);
+          if (found !== undefined) {
+            cx = val;
+            val = found;
+          } else {
+            val = '';
+          }
+        }
+      }
+
+      if (returnFound && !val) {
+        return false;
+      }
+
+      if (!returnFound && typeof val == 'function') {
+        ctx.push(cx);
+        val = this.mv(val, ctx, partials);
+        ctx.pop();
+      }
+
+      return val;
+    },
+
+    // find values with normal names
+    f: function(key, ctx, partials, returnFound) {
+      var val = false,
+          v = null,
+          found = false,
+          doModelGet = this.options.modelGet;
+
+      for (var i = ctx.length - 1; i >= 0; i--) {
+        v = ctx[i];
+        val = findInScope(key, v, doModelGet);
+        if (val !== undefined) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        return (returnFound) ? false : "";
+      }
+
+      if (!returnFound && typeof val == 'function') {
+        val = this.mv(val, ctx, partials);
+      }
+
+      return val;
+    },
+
+    // higher order templates
+    ls: function(func, cx, partials, text, tags) {
+      var oldTags = this.options.delimiters;
+
+      this.options.delimiters = tags;
+      this.b(this.ct(coerceToString(func.call(cx, text)), cx, partials));
+      this.options.delimiters = oldTags;
+
+      return false;
+    },
+
+    // compile text
+    ct: function(text, cx, partials) {
+      if (this.options.disableLambda) {
+        throw new Error('Lambda features disabled.');
+      }
+      return this.c.compile(text, this.options).render(cx, partials);
+    },
+
+    // template result buffering
+    b: function(s) { this.buf += s; },
+
+    fl: function() { var r = this.buf; this.buf = ''; return r; },
+
+    // method replace section
+    ms: function(func, ctx, partials, inverted, start, end, tags) {
+      var textSource,
+          cx = ctx[ctx.length - 1],
+          result = func.call(cx);
+
+      if (typeof result == 'function') {
+        if (inverted) {
+          return true;
+        } else {
+          textSource = (this.activeSub && this.subsText && this.subsText[this.activeSub]) ? this.subsText[this.activeSub] : this.text;
+          return this.ls(result, cx, partials, textSource.substring(start, end), tags);
+        }
+      }
+
+      return result;
+    },
+
+    // method replace variable
+    mv: function(func, ctx, partials) {
+      var cx = ctx[ctx.length - 1];
+      var result = func.call(cx);
+
+      if (typeof result == 'function') {
+        return this.ct(coerceToString(result.call(cx)), cx, partials);
+      }
+
+      return result;
+    },
+
+    sub: function(name, context, partials, indent) {
+      var f = this.subs[name];
+      if (f) {
+        this.activeSub = name;
+        f(context, partials, this, indent);
+        this.activeSub = false;
+      }
+    }
+
+  };
+
+  //Find a key in an object
+  function findInScope(key, scope, doModelGet) {
+    var val;
+
+    if (scope && typeof scope == 'object') {
+
+      if (scope[key] !== undefined) {
+        val = scope[key];
+
+      // try lookup with get for backbone or similar model data
+      } else if (doModelGet && scope.get && typeof scope.get == 'function') {
+        val = scope.get(key);
+      }
+    }
+
+    return val;
+  }
+
+  function createSpecializedPartial(instance, subs, partials, stackSubs, stackPartials, stackText) {
+    function PartialTemplate() {};
+    PartialTemplate.prototype = instance;
+    function Substitutions() {};
+    Substitutions.prototype = instance.subs;
+    var key;
+    var partial = new PartialTemplate();
+    partial.subs = new Substitutions();
+    partial.subsText = {};  //hehe. substext.
+    partial.buf = '';
+
+    stackSubs = stackSubs || {};
+    partial.stackSubs = stackSubs;
+    partial.subsText = stackText;
+    for (key in subs) {
+      if (!stackSubs[key]) stackSubs[key] = subs[key];
+    }
+    for (key in stackSubs) {
+      partial.subs[key] = stackSubs[key];
+    }
+
+    stackPartials = stackPartials || {};
+    partial.stackPartials = stackPartials;
+    for (key in partials) {
+      if (!stackPartials[key]) stackPartials[key] = partials[key];
+    }
+    for (key in stackPartials) {
+      partial.partials[key] = stackPartials[key];
+    }
+
+    return partial;
+  }
+
+  var rAmp = /&/g,
+      rLt = /</g,
+      rGt = />/g,
+      rApos = /\'/g,
+      rQuot = /\"/g,
+      hChars = /[&<>\"\']/;
+
+  function coerceToString(val) {
+    return String((val === null || val === undefined) ? '' : val);
+  }
+
+  function hoganEscape(str) {
+    str = coerceToString(str);
+    return hChars.test(str) ?
+      str
+        .replace(rAmp, '&amp;')
+        .replace(rLt, '&lt;')
+        .replace(rGt, '&gt;')
+        .replace(rApos, '&#39;')
+        .replace(rQuot, '&quot;') :
+      str;
+  }
+
+  var isArray = Array.isArray || function(a) {
+    return Object.prototype.toString.call(a) === '[object Array]';
+  };
+
+})(typeof exports !== 'undefined' ? exports : Hogan);
+
+}, {}],
+12: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":16}],
 5: [function(require, module, exports) {
 "use strict";
 
+var dom = require('../dom.js');
+
 module.exports = function(rootEl, emitter) {
 	console.log('product bootstrap.');
-	
+
 	emitter.on('page.activated.product', function(id) {
 		console.log('activated product page with id #' + id);
 	});
 };
-}, {}]}, {}, {"1":""})
+}, {"../dom.js":9}],
+6: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var dom = require('../dom.js');
+var storeService = require('../store-service.js');
+
+var cartTemplate = require('../templates/cart.hg');
+var cartEmptyTemplate = require('../templates/cart-empty.hg');
+var productItemTemplate = require('../templates/product-item.hg');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
+var products = storeService.cartProducts;
+
+
+// Functions
+
+function render() {
+  var items = [];
+
+  for (var i=0,len=products.length; i<len; i++) {
+    items.push(productItemTemplate.render(products.get(i)));
+  }
+
+  var html = cartTemplate.render({
+    products: items.join('')
+  });
+
+  dom.replaceHtml(pageEl, html);
+}
+
+function registerCartEventHandler() {
+  document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
+    var productId = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-cart'): null;
+
+    if (productId !== null) {
+      storeService.addProductToCart(productId);
+    }
+  }, false);
+}
+
+
+// Bootstrap
+
+storeService.cartProducts.on('change', render);
+
+registerCartEventHandler();
+
+
+// Exports
+
+module.exports = function(rootEl, emitter) {
+  console.log('cart bootstrap.');
+
+  rootEl.appendChild(partEl);
+
+  storeService.loadCartProducts();
+
+  emitter.on('cart.add', function(productId) {
+    storeService.addProductToCart(productId);
+  });
+};
+}, {"../dom.js":9,"../store-service.js":10,"../templates/cart.hg":17,"../templates/cart-empty.hg":18,"../templates/product-item.hg":12}],
+17: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":16}],
+18: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":16}]}, {}, {"1":""})
