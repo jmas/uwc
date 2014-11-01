@@ -116,7 +116,7 @@ function registerCart() {
     cartPartFn(el, emitter);
   }
 
-  pageListEl.appendChild(el);
+  cartContentEl.appendChild(el);
 }
 
 

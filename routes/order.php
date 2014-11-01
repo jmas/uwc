@@ -46,7 +46,7 @@ $app->get('/products', function() use ($app) {
 
   $orderId = $_SESSION['order_id'];
 
-  $sql = 'SELECT * FROM order_product WHERE order_id=:orderId';
+  $sql = 'SELECT p.* FROM order_product op LEFT JOIN product p ON op.product_id=p.id WHERE op.order_id=:orderId';
 
   $stmt = $app->db->prepare($sql);
 

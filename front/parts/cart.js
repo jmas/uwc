@@ -25,13 +25,16 @@ function render() {
 
   for (var i=0,len=products.length; i<len; i++) {
     items.push(productItemTemplate.render(products.get(i)));
+    console.log(products.get(i));
   }
 
   var html = cartTemplate.render({
     products: items.join('')
   });
 
-  dom.replaceHtml(pageEl, html);
+  dom.replaceHtml(partEl, html);
+
+  console.log('render cart');
 }
 
 function registerCartEventHandler() {

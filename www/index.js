@@ -201,7 +201,7 @@ function registerCart() {
     cartPartFn(el, emitter);
   }
 
-  pageListEl.appendChild(el);
+  cartContentEl.appendChild(el);
 }
 
 
@@ -896,6 +896,8 @@ module.exports = new Emitter({
   },
 
   loadCartProducts: function() {
+    var _this = this;
+
     request.get('/api/order/products').end(function(response) {
       if (! response.ok) {
         _this.emit('error', 'Не удалось получить данные с сервера.');
@@ -907,8 +909,14 @@ module.exports = new Emitter({
         return;
       }
 
-      _this.cartProducts.remove();
-      _this.cartProducts.insert(response.body.result);
+      try {
+        _this.cartProducts.remove();
+        _this.cartProducts.insert(response.body.result);
+      } catch (e) {
+        console.error(e);
+      }
+
+      console.log('loaded cart products');
     });
   },
   
@@ -926,8 +934,12 @@ module.exports = new Emitter({
         return;
       }
 
-      _this.products.remove();
-      _this.products.insert(response.body.result);
+      try {
+        _this.products.remove();
+        _this.products.insert(response.body.result);
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
 });
@@ -2763,13 +2775,16 @@ function render() {
 
   for (var i=0,len=products.length; i<len; i++) {
     items.push(productItemTemplate.render(products.get(i)));
+    console.log(products.get(i));
   }
 
   var html = cartTemplate.render({
     products: items.join('')
   });
 
-  dom.replaceHtml(pageEl, html);
+  dom.replaceHtml(partEl, html);
+
+  console.log('render cart');
 }
 
 function registerCartEventHandler() {
