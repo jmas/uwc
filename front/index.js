@@ -17,6 +17,8 @@ if (typeof console === 'undefined') {
 var Router = require('component/router');
 var Emitter = require('component/emitter');
 
+var storeService = require('./store-service.js');
+
 var productsPartFn = require('./parts/products.js');
 var productPartFn = require('./parts/product.js');
 var cartPartFn = require('./parts/cart.js');
@@ -34,6 +36,11 @@ var router = new Router;
 // Functions
 
 function addPage(name, bootstrapFn) {
+  if (typeof name !== 'string') {
+    console.warn('name should be a string.');
+    return;
+  }
+
   var el = document.createElement('DIV');
   el.setAttribute('class', 'page-item');
   el.setAttribute('data-page', name);
@@ -50,6 +57,11 @@ function addPage(name, bootstrapFn) {
 }
 
 function activatePage(name) {
+  if (typeof name !== 'string') {
+    console.warn('name should be a string.');
+    return;
+  }
+
   for (var item,i=0,len=pagesEls.length; i<len; i++) {
     item = pagesEls[i];
 
@@ -92,6 +104,7 @@ function registerRouting() {
     }
 
     if (route !== null) {
+      console.log('dispatch location: ', route);
       router.dispatch(route);
     }
   }, false);
@@ -103,7 +116,7 @@ function dispatchRouting() {
   if (! loc) {
     loc = '/';
   }
-  
+
   console.log('dispatch start location: ', loc);
   
   router.dispatch(loc);
@@ -121,6 +134,10 @@ function registerCart() {
 
 
 // Bootstrap
+
+storeService.on('error', function(msg) {
+  emitter.emit('error', msg);
+});
 
 addPage('products', productsPartFn);
 addPage('product', productPartFn);

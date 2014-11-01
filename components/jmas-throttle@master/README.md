@@ -1,0 +1,4 @@
+throttle
+========
+
+JavaScript throttle

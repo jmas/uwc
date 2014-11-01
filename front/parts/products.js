@@ -5,6 +5,7 @@
 
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
+var throttle = require('jmas/throttle');
 
 var productsTemplate = require('../templates/products.hg');
 var productItemTemplate = require('../templates/product-item.hg');
@@ -35,7 +36,7 @@ function render() {
 
 // Bootstrap
 
-products.on('change', render);
+products.on('change', throttle(render));
 
 
 // Exports

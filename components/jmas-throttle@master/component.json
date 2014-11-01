@@ -1,0 +1,10 @@
+{
+  "name": "throttle",
+  "repository": "jmas/throttle",
+  "description": "JavaScript throttle",
+  "version": "0.0.1",
+  "keywords": ["throttle"],
+  "scripts": ["throttle.js"],
+  "main": "throttle.js",
+  "license": "MIT"
+}

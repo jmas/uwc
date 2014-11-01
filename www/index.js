@@ -102,6 +102,8 @@ if (typeof console === 'undefined') {
 var Router = require('component/router');
 var Emitter = require('component/emitter');
 
+var storeService = require('./store-service.js');
+
 var productsPartFn = require('./parts/products.js');
 var productPartFn = require('./parts/product.js');
 var cartPartFn = require('./parts/cart.js');
@@ -119,6 +121,11 @@ var router = new Router;
 // Functions
 
 function addPage(name, bootstrapFn) {
+  if (typeof name !== 'string') {
+    console.warn('name should be a string.');
+    return;
+  }
+
   var el = document.createElement('DIV');
   el.setAttribute('class', 'page-item');
   el.setAttribute('data-page', name);
@@ -135,6 +142,11 @@ function addPage(name, bootstrapFn) {
 }
 
 function activatePage(name) {
+  if (typeof name !== 'string') {
+    console.warn('name should be a string.');
+    return;
+  }
+
   for (var item,i=0,len=pagesEls.length; i<len; i++) {
     item = pagesEls[i];
 
@@ -177,6 +189,7 @@ function registerRouting() {
     }
 
     if (route !== null) {
+      console.log('dispatch location: ', route);
       router.dispatch(route);
     }
   }, false);
@@ -188,7 +201,7 @@ function dispatchRouting() {
   if (! loc) {
     loc = '/';
   }
-  
+
   console.log('dispatch start location: ', loc);
   
   router.dispatch(loc);
@@ -207,6 +220,10 @@ function registerCart() {
 
 // Bootstrap
 
+storeService.on('error', function(msg) {
+  emitter.emit('error', msg);
+});
+
 addPage('products', productsPartFn);
 addPage('product', productPartFn);
 
@@ -224,7 +241,7 @@ router.get('/product/:id', function(id) {
 
 registerRouting();
 dispatchRouting();
-}, {"component/router":2,"component/emitter":3,"./parts/products.js":4,"./parts/product.js":5,"./parts/cart.js":6}],
+}, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./parts/products.js":5,"./parts/product.js":6,"./parts/cart.js":7}],
 2: [function(require, module, exports) {
 
 /**
@@ -313,8 +330,8 @@ Router.prototype.teardown = function(){
   route.call('after', this.args);
 };
 
-}, {"route":7}],
-7: [function(require, module, exports) {
+}, {"route":8}],
+8: [function(require, module, exports) {
 
 /**
  * Module dependencies.
@@ -428,8 +445,8 @@ Route.prototype.match = function(path){
   return params;
 };
 
-}, {"path-to-regexp":8}],
-8: [function(require, module, exports) {
+}, {"path-to-regexp":9}],
+9: [function(require, module, exports) {
 /**
  * Expose `pathtoRegexp`.
  */
@@ -773,100 +790,6 @@ Emitter.prototype.hasListeners = function(event){
 
 // Requires
 
-var dom = require('../dom.js');
-var storeService = require('../store-service.js');
-
-var productsTemplate = require('../templates/products.hg');
-var productItemTemplate = require('../templates/product-item.hg');
-
-
-// Local vars
-
-var partEl = document.createElement('DIV');
-var products = storeService.products;
-
-
-// Functions
-
-function render() {
-	var items = [];
-
-	for (var i=0,len=products.length; i<len; i++) {
-		items.push(productItemTemplate.render(products.get(i)));
-	}
-
-	var html = productsTemplate.render({
-		products: items.join('')
-	});
-
-	dom.replaceHtml(partEl, html);
-}
-
-
-// Bootstrap
-
-products.on('change', render);
-
-
-// Exports
-
-module.exports = function(rootEl, emitter) {
-	console.log('products bootstrap.');
-
-	rootEl.appendChild(partEl);
-
-	emitter.on('page.activated.products', function(name) {
-		storeService.loadProducts();
-
-		console.log('activated products page');
-	});
-};
-}, {"../dom.js":9,"../store-service.js":10,"../templates/products.hg":11,"../templates/product-item.hg":12}],
-9: [function(require, module, exports) {
-"use strict";
-
-
-module.exports = {
-	removeChildNodes: function(node) {
-		if (! node) {
-			console.warn('node is wrong.');
-			return;
-		}
-
-		while (node.firstChild) {
-			node.removeChild(node.firstChild);	
-		}
-	},
-	replaceHtml: function(node, html) {
-		this.removeChildNodes(node);
-		this.html(node, html);
-	},
-	appendHtml: function(node, html) {
-		this.html(node, html, 'beforeend');
-	},
-	html: function(node, html, pos) {
-		pos = pos || 'beforeend';
-
-		if (! html instanceof String) {
-			console.warn('html is not string.');
-			return;
-		}
-
-		if (! node) {
-			console.warn('node is wrong.');
-			return;
-		}
-
-		node.insertAdjacentHTML(pos, html);
-	}
-};
-}, {}],
-10: [function(require, module, exports) {
-"use strict";
-
-
-// Requires
-
 var request = require('visionmedia/superagent');
 var Arr = require('jmas/arr');
 var Emitter = require('component/emitter');
@@ -943,8 +866,8 @@ module.exports = new Emitter({
     });
   }
 });
-}, {"visionmedia/superagent":13,"jmas/arr":14,"component/emitter":3}],
-13: [function(require, module, exports) {
+}, {"visionmedia/superagent":10,"jmas/arr":11,"component/emitter":3}],
+10: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -2022,8 +1945,8 @@ request.put = function(url, data, fn){
 
 module.exports = request;
 
-}, {"emitter":3,"reduce":15}],
-15: [function(require, module, exports) {
+}, {"emitter":3,"reduce":12}],
+12: [function(require, module, exports) {
 
 /**
  * Reduce `arr` with `fn`.
@@ -2049,7 +1972,7 @@ module.exports = function(arr, fn, initial){
   return curr;
 };
 }, {}],
-14: [function(require, module, exports) {
+11: [function(require, module, exports) {
 (function(rootScope) {
   
   // original Array methods
@@ -2384,10 +2307,137 @@ module.exports = function(arr, fn, initial){
 })(this);
 
 }, {}],
-11: [function(require, module, exports) {
+5: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var dom = require('../dom.js');
+var storeService = require('../store-service.js');
+var throttle = require('jmas/throttle');
+
+var productsTemplate = require('../templates/products.hg');
+var productItemTemplate = require('../templates/product-item.hg');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+var products = storeService.products;
+
+
+// Functions
+
+function render() {
+	var items = [];
+
+	for (var i=0,len=products.length; i<len; i++) {
+		items.push(productItemTemplate.render(products.get(i)));
+	}
+
+	var html = productsTemplate.render({
+		products: items.join('')
+	});
+
+	dom.replaceHtml(partEl, html);
+}
+
+
+// Bootstrap
+
+products.on('change', throttle(render));
+
+
+// Exports
+
+module.exports = function(rootEl, emitter) {
+	console.log('products bootstrap.');
+
+	rootEl.appendChild(partEl);
+
+	emitter.on('page.activated.products', function(name) {
+		storeService.loadProducts();
+
+		console.log('activated products page');
+	});
+};
+}, {"../dom.js":13,"../store-service.js":4,"jmas/throttle":14,"../templates/products.hg":15,"../templates/product-item.hg":16}],
+13: [function(require, module, exports) {
+"use strict";
+
+
+module.exports = {
+	removeChildNodes: function(node) {
+		if (! node) {
+			console.warn('node is wrong.');
+			return;
+		}
+
+		while (node.firstChild) {
+			node.removeChild(node.firstChild);	
+		}
+	},
+	replaceHtml: function(node, html) {
+		this.removeChildNodes(node);
+		this.html(node, html);
+	},
+	appendHtml: function(node, html) {
+		this.html(node, html, 'beforeend');
+	},
+	html: function(node, html, pos) {
+		pos = pos || 'beforeend';
+
+		if (! html instanceof String) {
+			console.warn('html is not string.');
+			return;
+		}
+
+		if (! node) {
+			console.warn('node is wrong.');
+			return;
+		}
+
+		node.insertAdjacentHTML(pos, html);
+	}
+};
+}, {}],
+14: [function(require, module, exports) {
+(function(rootScope) {
+  
+  var throttle = function(fn, timeout, ctx) {
+    var timer, args, needInvoke;
+
+    return function() {
+      args = arguments;
+      needInvoke = true;
+      ctx = ctx || this;
+
+      timer || (function() {
+        if(needInvoke) {
+          fn.apply(ctx, args);
+          needInvoke = false;
+          timer = setTimeout(arguments.callee, timeout);
+        }
+        else {
+          timer = null;
+        }
+      })();
+    };
+  };
+
+  if (typeof module !== 'undefined') {
+    module.exports = throttle;
+  } else {
+    rootScope.throttle = throttle;
+  }
+
+})(this);
+}, {}],
+15: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":16}],
-16: [function(require, module, exports) {
+}, {"hogan-runtime":17}],
+17: [function(require, module, exports) {
 /*
  *  Copyright 2011 Twitter, Inc.
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -2731,10 +2781,10 @@ var Hogan = {};
 })(typeof exports !== 'undefined' ? exports : Hogan);
 
 }, {}],
-12: [function(require, module, exports) {
+16: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":16}],
-5: [function(require, module, exports) {
+}, {"hogan-runtime":17}],
+6: [function(require, module, exports) {
 "use strict";
 
 var dom = require('../dom.js');
@@ -2746,8 +2796,8 @@ module.exports = function(rootEl, emitter) {
 		console.log('activated product page with id #' + id);
 	});
 };
-}, {"../dom.js":9}],
-6: [function(require, module, exports) {
+}, {"../dom.js":13}],
+7: [function(require, module, exports) {
 "use strict";
 
 
@@ -2755,6 +2805,7 @@ module.exports = function(rootEl, emitter) {
 
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
+var throttle = require('jmas/throttle');
 
 var cartTemplate = require('../templates/cart.hg');
 var cartEmptyTemplate = require('../templates/cart-empty.hg');
@@ -2773,14 +2824,17 @@ var products = storeService.cartProducts;
 function render() {
   var items = [];
 
-  for (var i=0,len=products.length; i<len; i++) {
-    items.push(productItemTemplate.render(products.get(i)));
-    console.log(products.get(i));
-  }
+  if (products.length > 0) {
+    for (var i=0,len=products.length; i<len; i++) {
+      items.push(productItemTemplate.render(products.get(i)));
+    }
 
-  var html = cartTemplate.render({
-    products: items.join('')
-  });
+    var html = cartTemplate.render({
+      products: items.join('')
+    });
+  } else {
+    html = cartEmptyTemplate.render();
+  }
 
   dom.replaceHtml(partEl, html);
 
@@ -2800,7 +2854,7 @@ function registerCartEventHandler() {
 
 // Bootstrap
 
-storeService.cartProducts.on('change', render);
+storeService.cartProducts.on('change', throttle(render));
 
 registerCartEventHandler();
 
@@ -2818,10 +2872,10 @@ module.exports = function(rootEl, emitter) {
     storeService.addProductToCart(productId);
   });
 };
-}, {"../dom.js":9,"../store-service.js":10,"../templates/cart.hg":17,"../templates/cart-empty.hg":18,"../templates/product-item.hg":12}],
-17: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":16}],
+}, {"../dom.js":13,"../store-service.js":4,"jmas/throttle":14,"../templates/cart.hg":18,"../templates/cart-empty.hg":19,"../templates/product-item.hg":16}],
 18: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+19: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":16}]}, {}, {"1":""})
+}, {"hogan-runtime":17}]}, {}, {"1":""})

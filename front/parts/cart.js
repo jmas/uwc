@@ -5,6 +5,7 @@
 
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
+var throttle = require('jmas/throttle');
 
 var cartTemplate = require('../templates/cart.hg');
 var cartEmptyTemplate = require('../templates/cart-empty.hg');
@@ -23,14 +24,17 @@ var products = storeService.cartProducts;
 function render() {
   var items = [];
 
-  for (var i=0,len=products.length; i<len; i++) {
-    items.push(productItemTemplate.render(products.get(i)));
-    console.log(products.get(i));
-  }
+  if (products.length > 0) {
+    for (var i=0,len=products.length; i<len; i++) {
+      items.push(productItemTemplate.render(products.get(i)));
+    }
 
-  var html = cartTemplate.render({
-    products: items.join('')
-  });
+    var html = cartTemplate.render({
+      products: items.join('')
+    });
+  } else {
+    html = cartEmptyTemplate.render();
+  }
 
   dom.replaceHtml(partEl, html);
 
@@ -50,7 +54,7 @@ function registerCartEventHandler() {
 
 // Bootstrap
 
-storeService.cartProducts.on('change', render);
+storeService.cartProducts.on('change', throttle(render));
 
 registerCartEventHandler();
 
