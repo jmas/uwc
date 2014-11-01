@@ -1,5 +1,8 @@
 <?php
 
+session_cache_limiter(false);
+session_start();
+
 require '../vendor/autoload.php';
 
 define('PROJECT_ROOT', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..');

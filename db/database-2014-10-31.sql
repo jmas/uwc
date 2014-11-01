@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS product_view (
                     user_id INTEGER);
 
 CREATE TABLE IF NOT EXISTS `order` (
-                    id INTEGER PRIMARY KEY, 
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER, 
                     customer_name TEXT,
                     bought INTEGER);
 
