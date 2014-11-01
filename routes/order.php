@@ -46,7 +46,7 @@ $app->get('/products', function() use ($app) {
 
   $orderId = $_SESSION['order_id'];
 
-  $sql = 'SELECT p.* FROM order_product op LEFT JOIN product p ON op.product_id=p.id WHERE op.order_id=:orderId';
+  $sql = 'SELECT p.*, SUM(op.amount) AS amount FROM order_product op LEFT JOIN product p ON op.product_id=p.id WHERE op.order_id=:orderId GROUP BY op.product_id';
 
   $stmt = $app->db->prepare($sql);
 
