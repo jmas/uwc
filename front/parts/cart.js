@@ -15,6 +15,7 @@ var productItemTemplate = require('../templates/product-item.hg');
 // Local vars
 
 var partEl = document.createElement('DIV');
+var cartCheckoutEl = document.getElementById('cart-checkout');
 var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
 var products = storeService.cartProducts;
 
@@ -25,14 +26,25 @@ function render() {
   var items = [];
 
   if (products.length > 0) {
-    for (var i=0,len=products.length; i<len; i++) {
-      items.push(productItemTemplate.render(products.get(i)));
+    var price = 0;
+
+    for (var item,i=0,len=products.length; i<len; i++) {
+      item = products.get(i);
+
+      items.push(productItemTemplate.render(item));
+
+      price += item.price * item.amount;
     }
 
     var html = cartTemplate.render({
       products: items.join('')
     });
+
+    cartCheckoutEl.classList.add('active');
+
+    cartCheckoutPriceEl.innerHTML = Math.ceil(price * 100) / 100;
   } else {
+    cartCheckoutEl.classList.remove('active');
     html = cartEmptyTemplate.render();
   }
 
