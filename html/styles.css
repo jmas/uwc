@@ -146,6 +146,14 @@ h3 {
 	font-size: 1.2em;
 }
 
+.page-item {
+	display: none;
+}
+
+.page-item.active {
+	display: block;
+}
+
 
 
 #app {
@@ -193,6 +201,11 @@ h3 {
 #cart-checkout {
 	text-align: center;
 	font-weight: bold;
+	display: none;
+}
+
+#cart-checkout.active {
+	display: block;
 }
 
 #product-view {
