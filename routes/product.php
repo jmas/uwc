@@ -8,7 +8,7 @@ $app->get('/', function () use ($app) {
   $stmt = $app->db->prepare($sql);
   
   if ($stmt->execute() === false) {
-    $app->halt(503, 'Query not executable!');
+    $app->halt(503, 'Query is not executable!');
   }
   
   $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -28,7 +28,7 @@ $app->get('/:id', function($id) use ($app) {
   $stmt->bindParam(':id', $id);
   
   if ($stmt->execute() === false) {
-    $app->halt(503, 'Query not executable!');
+    $app->halt(503, 'Query is not executable!');
   }
 
   $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -41,20 +41,20 @@ $app->get('/:id', function($id) use ($app) {
 
 // Recomendation: Bought with
 
-$app->get('/buy-with/:id', function($id) use ($app) {
+$app->get('/buy-with/:productId', function($productId) use ($app) {
   
 });
 
 
 // Recomendation: Viewed with
 
-$app->get('/view-with/:id', function($id) use ($app) {
+$app->get('/view-with/:productId', function($productId) use ($app) {
 
 });
 
 
 // Recomendation: Added to cart with
 
-$app->get('/cart-with/:id', function($id) use ($app) {
+$app->get('/cart-with/:productId', function($productId) use ($app) {
   
 });  
