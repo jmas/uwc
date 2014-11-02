@@ -31,6 +31,8 @@ function render() {
 	});
 
 	dom.replaceHtml(partEl, html);
+
+	console.log('render products');
 }
 
 
@@ -44,11 +46,11 @@ products.on('change', throttle(render));
 module.exports = function(rootEl, emitter) {
 	console.log('products bootstrap.');
 
-	rootEl.appendChild(partEl);
-
 	emitter.on('page.activated.products', function(name) {
 		storeService.loadProducts();
 
 		console.log('activated products page');
 	});
+
+	return partEl;
 };

@@ -104,9 +104,12 @@ var Emitter = require('component/emitter');
 
 var storeService = require('./store-service.js');
 
+var dom = require('./dom.js');
+
 var productsPartFn = require('./parts/products.js');
 var productPartFn = require('./parts/product.js');
 var cartPartFn = require('./parts/cart.js');
+var checkoutPartFn = require('./parts/checkout.js');
 
 
 // Local vars
@@ -131,7 +134,11 @@ function addPage(name, bootstrapFn) {
   el.setAttribute('data-page', name);
   
   if (typeof bootstrapFn === 'function') {
-    bootstrapFn(el, emitter);
+    var partEl = bootstrapFn(el, emitter);
+    
+    if (typeof partEl !== 'undefined' && partEl !== null && dom.isNode(partEl)) {
+      el.appendChild(partEl);
+    }
   }
 
   pageListEl.appendChild(el);
@@ -211,7 +218,11 @@ function registerCart() {
   var el = document.createElement('DIV');
   
   if (typeof cartPartFn === 'function') {
-    cartPartFn(el, emitter);
+    var partEl = cartPartFn(el, emitter);
+
+    if (typeof partEl !== 'undefined' && partEl !== null && dom.isNode(partEl)) {
+      el.appendChild(partEl);
+    }
   }
 
   cartContentEl.appendChild(el);
@@ -224,8 +235,13 @@ storeService.on('error', function(msg) {
   emitter.emit('error', msg);
 });
 
+storeService.on('checkout', function() {
+  router.dispatch('/checkout');
+});
+
 addPage('products', productsPartFn);
 addPage('product', productPartFn);
+addPage('checkout', checkoutPartFn);
 
 registerCart();
 
@@ -239,9 +255,13 @@ router.get('/product/:id', function(id) {
   emitter.emit('page.activated.product', id);
 });
 
+router.get('/checkout', function() {
+  alert('Ваш заказ принят и обрабатывается!');
+});
+
 registerRouting();
 dispatchRouting();
-}, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./parts/products.js":5,"./parts/product.js":6,"./parts/cart.js":7}],
+}, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./dom.js":5,"./parts/products.js":6,"./parts/product.js":7,"./parts/cart.js":8,"./parts/checkout.js":9}],
 2: [function(require, module, exports) {
 
 /**
@@ -330,8 +350,8 @@ Router.prototype.teardown = function(){
   route.call('after', this.args);
 };
 
-}, {"route":8}],
-8: [function(require, module, exports) {
+}, {"route":10}],
+10: [function(require, module, exports) {
 
 /**
  * Module dependencies.
@@ -445,8 +465,8 @@ Route.prototype.match = function(path){
   return params;
 };
 
-}, {"path-to-regexp":9}],
-9: [function(require, module, exports) {
+}, {"path-to-regexp":11}],
+11: [function(require, module, exports) {
 /**
  * Expose `pathtoRegexp`.
  */
@@ -864,10 +884,34 @@ module.exports = new Emitter({
         console.error(e);
       }
     });
+  },
+
+  checkout: function() {
+    var _this = this;
+
+    request.post('/api/order').send({ purchased: '1' }).end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.emit('checkout');
+
+      try {
+        _this.cartProducts.remove();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   }
 });
-}, {"visionmedia/superagent":10,"jmas/arr":11,"component/emitter":3}],
-10: [function(require, module, exports) {
+}, {"visionmedia/superagent":12,"jmas/arr":13,"component/emitter":3}],
+12: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -1945,8 +1989,8 @@ request.put = function(url, data, fn){
 
 module.exports = request;
 
-}, {"emitter":3,"reduce":12}],
-12: [function(require, module, exports) {
+}, {"emitter":3,"reduce":14}],
+14: [function(require, module, exports) {
 
 /**
  * Reduce `arr` with `fn`.
@@ -1972,7 +2016,7 @@ module.exports = function(arr, fn, initial){
   return curr;
 };
 }, {}],
-11: [function(require, module, exports) {
+13: [function(require, module, exports) {
 (function(rootScope) {
   
   // original Array methods
@@ -2311,6 +2355,51 @@ module.exports = function(arr, fn, initial){
 "use strict";
 
 
+module.exports = {
+  removeChildNodes: function(node) {
+    if (! node) {
+      console.warn('node is wrong.');
+      return;
+    }
+
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);  
+    }
+  },
+  replaceHtml: function(node, html) {
+    this.removeChildNodes(node);
+    this.html(node, html);
+  },
+  appendHtml: function(node, html) {
+    this.html(node, html, 'beforeend');
+  },
+  html: function(node, html, pos) {
+    pos = pos || 'beforeend';
+
+    if (! html instanceof String) {
+      console.warn('html is not string.');
+      return;
+    }
+
+    if (! node) {
+      console.warn('node is wrong.');
+      return;
+    }
+
+    node.insertAdjacentHTML(pos, html);
+  },
+  isNode: function(obj) {
+    return (
+      typeof Node === "object" ? obj instanceof Node : 
+      obj && typeof obj === "object" && typeof obj.nodeType === "number" && typeof obj.nodeName==="string"
+    );
+  }
+};
+}, {}],
+6: [function(require, module, exports) {
+"use strict";
+
+
 // Requires
 
 var dom = require('../dom.js');
@@ -2341,6 +2430,8 @@ function render() {
 	});
 
 	dom.replaceHtml(partEl, html);
+
+	console.log('render products');
 }
 
 
@@ -2354,55 +2445,16 @@ products.on('change', throttle(render));
 module.exports = function(rootEl, emitter) {
 	console.log('products bootstrap.');
 
-	rootEl.appendChild(partEl);
-
 	emitter.on('page.activated.products', function(name) {
 		storeService.loadProducts();
 
 		console.log('activated products page');
 	});
+
+	return partEl;
 };
-}, {"../dom.js":13,"../store-service.js":4,"jmas/throttle":14,"../templates/products.hg":15,"../templates/product-item.hg":16}],
-13: [function(require, module, exports) {
-"use strict";
-
-
-module.exports = {
-	removeChildNodes: function(node) {
-		if (! node) {
-			console.warn('node is wrong.');
-			return;
-		}
-
-		while (node.firstChild) {
-			node.removeChild(node.firstChild);	
-		}
-	},
-	replaceHtml: function(node, html) {
-		this.removeChildNodes(node);
-		this.html(node, html);
-	},
-	appendHtml: function(node, html) {
-		this.html(node, html, 'beforeend');
-	},
-	html: function(node, html, pos) {
-		pos = pos || 'beforeend';
-
-		if (! html instanceof String) {
-			console.warn('html is not string.');
-			return;
-		}
-
-		if (! node) {
-			console.warn('node is wrong.');
-			return;
-		}
-
-		node.insertAdjacentHTML(pos, html);
-	}
-};
-}, {}],
-14: [function(require, module, exports) {
+}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/products.hg":16,"../templates/product-item.hg":17}],
+15: [function(require, module, exports) {
 (function(rootScope) {
   
   var throttle = function(fn, timeout, ctx) {
@@ -2434,10 +2486,10 @@ module.exports = {
 
 })(this);
 }, {}],
-15: [function(require, module, exports) {
+16: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":17}],
-17: [function(require, module, exports) {
+}, {"hogan-runtime":18}],
+18: [function(require, module, exports) {
 /*
  *  Copyright 2011 Twitter, Inc.
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -2781,23 +2833,111 @@ var Hogan = {};
 })(typeof exports !== 'undefined' ? exports : Hogan);
 
 }, {}],
-16: [function(require, module, exports) {
+17: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":17}],
-6: [function(require, module, exports) {
+}, {"hogan-runtime":18}],
+7: [function(require, module, exports) {
 "use strict";
 
+
+// Requires
+
 var dom = require('../dom.js');
+var throttle = require('jmas/throttle');
+var parallel = require('jmas/parallel');
+var storeService = require('../store-service.js');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+var products = storeService.product;
+
+
+// Functions
+
+function loadProductAndRecomends(id) {
+	parallel([
+		function(next) { // load product
+
+		},
+		function(next) { // load recomends by view
+
+		},
+		function(next) { // load recomends by cart
+
+		},
+		function(next) { // load recomends by buy
+
+		}
+	], function() {
+
+	});
+}
+
+
+// Exports
 
 module.exports = function(rootEl, emitter) {
 	console.log('product bootstrap.');
 
 	emitter.on('page.activated.product', function(id) {
-		console.log('activated product page with id #' + id);
+		// console.log('activated product page with id #' + id);
 	});
+
+	return partEl;
 };
-}, {"../dom.js":13}],
-7: [function(require, module, exports) {
+}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"../store-service.js":4}],
+19: [function(require, module, exports) {
+(function() {
+  'use strict';
+  
+  var root = this || window;
+
+  var nextTick = function (fn) {
+    if (typeof setImmediate === 'function') {
+      setImmediate(fn);
+    } else if (typeof process !== 'undefined' && process.nextTick) {
+      process.nextTick(fn);
+    } else {
+      setTimeout(fn, 0);
+    }
+  };
+  
+  var parallel = function(tasks, result) {
+    var finished = 0;
+
+    var next = function() {
+      finished++;
+
+      if (finished === tasks.length) {
+        typeof result === 'function' && result.apply(null, []);
+      }
+    };
+
+    for (var i=0,len=tasks.length; i<len; i++) {
+      (function(fn) {
+        nextTick(function () {
+          typeof fn === 'function' && fn.apply(null, [next]);
+        });
+      })(tasks[i]);
+    }
+  };
+  
+  if (typeof define !== 'undefined' && define.amd) {
+    define([], function () {
+      return parallel;
+    }); // RequireJS
+  } else if (typeof module !== 'undefined' && module.exports) {
+    module.exports = parallel; // CommonJS
+  } else {
+    root.parallel = parallel; // <script>
+  }
+  
+})();
+
+}, {}],
+8: [function(require, module, exports) {
 "use strict";
 
 
@@ -2817,6 +2957,7 @@ var productItemTemplate = require('../templates/product-item.hg');
 var partEl = document.createElement('DIV');
 var cartCheckoutEl = document.getElementById('cart-checkout');
 var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
+var cartCheckoutBtn = document.getElementById('cart-checkout-btn');
 var products = storeService.cartProducts;
 
 
@@ -2863,6 +3004,12 @@ function registerCartEventHandler() {
   }, false);
 }
 
+function registerCheckoutEventHandler() {
+  cartCheckoutBtn.addEventListener('click', function(event) {
+    storeService.checkout();
+  }, false);
+}
+
 
 // Bootstrap
 
@@ -2870,24 +3017,51 @@ storeService.cartProducts.on('change', throttle(render));
 
 registerCartEventHandler();
 
+registerCheckoutEventHandler();
+
 
 // Exports
 
 module.exports = function(rootEl, emitter) {
   console.log('cart bootstrap.');
 
-  rootEl.appendChild(partEl);
-
   storeService.loadCartProducts();
 
   emitter.on('cart.add', function(productId) {
     storeService.addProductToCart(productId);
   });
+
+  return partEl;
 };
-}, {"../dom.js":13,"../store-service.js":4,"jmas/throttle":14,"../templates/cart.hg":18,"../templates/cart-empty.hg":19,"../templates/product-item.hg":16}],
-18: [function(require, module, exports) {
+}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/cart.hg":20,"../templates/cart-empty.hg":21,"../templates/product-item.hg":17}],
+20: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":17}],
-19: [function(require, module, exports) {
+}, {"hogan-runtime":18}],
+21: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":17}]}, {}, {"1":""})
+}, {"hogan-runtime":18}],
+9: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var dom = require('../dom.js');
+var throttle = require('jmas/throttle');
+var parallel = require('jmas/parallel');
+var storeService = require('../store-service.js');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+
+
+// Exports
+
+module.exports = function(rootEl, emitter) {
+	console.log('checkout bootstrap.');
+
+	return partEl;
+};
+}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"../store-service.js":4}]}, {}, {"1":""})

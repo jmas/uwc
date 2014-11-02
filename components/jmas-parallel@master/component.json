@@ -1,0 +1,10 @@
+{
+  "name": "parallel",
+  "repository": "jmas/parallel",
+  "description": "JavaScript very simple parallel",
+  "version": "0.1.0",
+  "keywords": ["parallel", "async"],
+  "scripts": ["parallel.js"],
+  "main": "parallel.js",
+  "license": "GNU GPL 2.0"
+}

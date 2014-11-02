@@ -1,12 +1,51 @@
 <?php
 
+// Return info about order
 
 $app->get('/', function() use ($app) {
-  // return info about order.
+  
 });
 
+
+// Update info about order
+
 $app->post('/', function() use ($app) {
-  // update info about order.
+  if (empty($_SESSION['user_id'])) {
+    $app->halt(503, 'User is not defined in current session!');
+  }
+
+  if (empty($_SESSION['order_id'])) {
+    $app->halt(503, 'Order is not defined in current session!');
+  }
+
+  $data = json_decode($app->request->getBody());
+
+  $sqlData = [];
+  $sqlValues = [];
+
+  foreach ($data as $key => $value) {
+    $sqlData[] = preg_replace('/[^a-zA-Z0-9_]/', '', $key) . '=?';
+    $sqlValues[] = $value;
+  }
+
+  $sqlValues[] = $_SESSION['order_id'];
+  $sqlValues[] = $_SESSION['user_id'];
+
+  $sql = 'UPDATE user_order SET ' . implode(' , ', $sqlData) . ' WHERE id=? AND user_id=? LIMIT 1';
+
+  $stmt = $app->db->prepare($sql);
+
+  $result = $stmt->execute($sqlValues);
+
+  if ($result === false) {
+    $app->halt(503, 'Query is not executable!');
+  }
+
+  unset($_SESSION['order_id']);
+
+  $app->response->write(json_encode([
+    'result'=>$result,
+  ]));
 });
 
 

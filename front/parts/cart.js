@@ -17,6 +17,7 @@ var productItemTemplate = require('../templates/product-item.hg');
 var partEl = document.createElement('DIV');
 var cartCheckoutEl = document.getElementById('cart-checkout');
 var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
+var cartCheckoutBtn = document.getElementById('cart-checkout-btn');
 var products = storeService.cartProducts;
 
 
@@ -63,6 +64,12 @@ function registerCartEventHandler() {
   }, false);
 }
 
+function registerCheckoutEventHandler() {
+  cartCheckoutBtn.addEventListener('click', function(event) {
+    storeService.checkout();
+  }, false);
+}
+
 
 // Bootstrap
 
@@ -70,17 +77,19 @@ storeService.cartProducts.on('change', throttle(render));
 
 registerCartEventHandler();
 
+registerCheckoutEventHandler();
+
 
 // Exports
 
 module.exports = function(rootEl, emitter) {
   console.log('cart bootstrap.');
 
-  rootEl.appendChild(partEl);
-
   storeService.loadCartProducts();
 
   emitter.on('cart.add', function(productId) {
     storeService.addProductToCart(productId);
   });
+
+  return partEl;
 };

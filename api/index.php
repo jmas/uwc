@@ -47,7 +47,9 @@ $app->hook('slim.before.router', function () use ($app) {
   }
 
   // If order is not difined at session - create new order
-  if (empty($_SESSION['order_id'])) {    
+  if (empty($_SESSION['order_id'])) {
+    $userId = $_SESSION['user_id'];
+    
     $sql = 'INSERT INTO user_order(user_id) VALUES(:userId)';
     
     $stmt = $app->db->prepare($sql);

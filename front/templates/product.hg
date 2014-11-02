@@ -1,0 +1,17 @@
+{{{product_view}}}
+
+<div id="product-view-back">
+  <a class="action-btn" href="#/">Вернуться к списку товаров</a>
+</div>
+
+<h3>Товары, которые покупают с этим товаром</h3>
+
+<div id="product-view-buy-with-list" class="product-list"></div>
+
+<h3>Товары, которые просматриваются с этим товаром</h3>
+
+<div id="product-view-view-with-list" class="product-list"></div>
+
+<h3>Товары, которые добавляются в корзину с этим товаром</h3>
+
+<div id="product-view-cart-with-list" class="product-list"></div>

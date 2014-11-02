@@ -77,5 +77,29 @@ module.exports = new Emitter({
         console.error(e);
       }
     });
+  },
+
+  checkout: function() {
+    var _this = this;
+
+    request.post('/api/order').send({ purchased: '1' }).end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.emit('checkout');
+
+      try {
+        _this.cartProducts.remove();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   }
 });

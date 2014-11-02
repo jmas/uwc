@@ -19,9 +19,12 @@ var Emitter = require('component/emitter');
 
 var storeService = require('./store-service.js');
 
+var dom = require('./dom.js');
+
 var productsPartFn = require('./parts/products.js');
 var productPartFn = require('./parts/product.js');
 var cartPartFn = require('./parts/cart.js');
+var checkoutPartFn = require('./parts/checkout.js');
 
 
 // Local vars
@@ -46,7 +49,11 @@ function addPage(name, bootstrapFn) {
   el.setAttribute('data-page', name);
   
   if (typeof bootstrapFn === 'function') {
-    bootstrapFn(el, emitter);
+    var partEl = bootstrapFn(el, emitter);
+    
+    if (typeof partEl !== 'undefined' && partEl !== null && dom.isNode(partEl)) {
+      el.appendChild(partEl);
+    }
   }
 
   pageListEl.appendChild(el);
@@ -126,7 +133,11 @@ function registerCart() {
   var el = document.createElement('DIV');
   
   if (typeof cartPartFn === 'function') {
-    cartPartFn(el, emitter);
+    var partEl = cartPartFn(el, emitter);
+
+    if (typeof partEl !== 'undefined' && partEl !== null && dom.isNode(partEl)) {
+      el.appendChild(partEl);
+    }
   }
 
   cartContentEl.appendChild(el);
@@ -139,8 +150,13 @@ storeService.on('error', function(msg) {
   emitter.emit('error', msg);
 });
 
+storeService.on('checkout', function() {
+  router.dispatch('/checkout');
+});
+
 addPage('products', productsPartFn);
 addPage('product', productPartFn);
+addPage('checkout', checkoutPartFn);
 
 registerCart();
 
@@ -152,6 +168,10 @@ router.get('/', function() {
 router.get('/product/:id', function(id) {
   activatePage('product');
   emitter.emit('page.activated.product', id);
+});
+
+router.get('/checkout', function() {
+  alert('Ваш заказ принят и обрабатывается!');
 });
 
 registerRouting();
