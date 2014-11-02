@@ -6,12 +6,12 @@
 
 <h3>Товары, которые покупают с этим товаром</h3>
 
-<div id="product-view-buy-with-list" class="product-list"></div>
+<div id="product-view-buy-with-list" class="product-list hor-list"></div>
 
 <h3>Товары, которые просматриваются с этим товаром</h3>
 
-<div id="product-view-view-with-list" class="product-list"></div>
+<div id="product-view-view-with-list" class="product-list hor-list"></div>
 
 <h3>Товары, которые добавляются в корзину с этим товаром</h3>
 
-<div id="product-view-cart-with-list" class="product-list"></div>
+<div id="product-view-cart-with-list" class="product-list hor-list"></div>
