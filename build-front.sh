@@ -8,6 +8,9 @@ cp -fr front/js/ www/js/
 cp -fr front/images/ www/images/
 
 # Minify
-# minify www/index.js www/index.js
-# minify www/styles.css www/styles.css
-
+# mv www/index.js www/index.full.js
+# mv www/styles.css www/styles.full.css
+# minify www/index.full.js -o www/index.js
+# minify www/styles.full.css -o www/styles.css
+# rm -f www/index.full.js
+# rm -f www/styles.full.css
