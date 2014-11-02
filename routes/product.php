@@ -26,7 +26,7 @@ $app->get('/:id', function($id) use ($app) {
   $sql = 'INSERT INTO product_view (product_id, user_id) VALUES (:product_id, :user_id)';
 
   $stmt = $app->db->prepare($sql);
-  $stmt->bindParam(':product_id', $product_id);
+  $stmt->bindParam(':product_id', $id);
   $stmt->bindParam(':user_id', $_SESSION['user_id']);
   
   if ($stmt->execute() === false) {
@@ -62,8 +62,8 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
       (
         SELECT order_id FROM order_product WHERE product_id = :productId
       ) AND purchased = 1
-    ) AND product_id <> :productId ORDER BY RANDOM() LIMIT 4
-  )';
+    ) AND product_id <> :productId LIMIT 10
+  ) ORDER BY RANDOM() LIMIT 4';
 
   $stmt = $app->db->prepare($sql);
   $stmt->bindParam(':productId', $productId);
@@ -84,11 +84,28 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
 // Recomendation: Viewed with
 
 $app->get('/view-with/:productId', function($productId) use ($app) {
-  $result = [];
+
+  $sql = 'SELECT * FROM product WHERE id IN 
+  (
+    SELECT DISTINCT product_id FROM product_view WHERE user_id IN 
+    (
+      SELECT user_id FROM product_view WHERE product_id = :productId
+    ) AND product_id <> :productId LIMIT 10
+  ) ORDER BY RANDOM() LIMIT 4';
+
+  $stmt = $app->db->prepare($sql);
+  $stmt->bindParam(':productId', $productId);
+  
+  if ($stmt->execute() === false) {
+    $app->halt(503, 'Query is not executable!');
+  }
+
+  $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
   $app->response->write(json_encode([
     'result'=>$result,
   ]));
+
 });
 
 
@@ -101,8 +118,8 @@ $app->get('/cart-with/:productId', function($productId) use ($app) {
     SELECT DISTINCT product_id FROM order_product WHERE order_id IN 
     (
       SELECT order_id FROM order_product WHERE product_id = :productId
-    ) AND product_id <> :productId ORDER BY RANDOM() LIMIT 4
-  )';
+    ) AND product_id <> :productId LIMIT 10
+  ) ORDER BY RANDOM() LIMIT 4';
 
   $stmt = $app->db->prepare($sql);
   $stmt->bindParam(':productId', $productId);
