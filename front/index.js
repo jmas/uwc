@@ -92,6 +92,7 @@ function registerRouting() {
     if (loc !== prevLoc) {
       router.dispatch(loc);
       prevLoc = loc;
+      dom.scrollTo(document.body, 0, 5000);
     }
 
     setTimeout(pingLocation, 10);

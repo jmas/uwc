@@ -168,39 +168,6 @@ function activatePage(name) {
 }
 
 function registerRouting() {
-  // document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
-  //   var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
-  //   var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
-
-  //   if (alternateRoute === null) {
-  //     var node = event.target.parentNode;
-  //     var len = 0;
-
-  //     while (node) {
-  //       if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
-  //         alternateRoute = node.getAttribute('href');
-  //         break;
-  //       }
-
-  //       if (len > 10) {
-  //         break;
-  //       }
-
-  //       node = node.parentNode;
-  //       len++;
-  //     }
-  //   }
-
-  //   if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
-  //     route = alternateRoute.substring(1);
-  //   }
-
-  //   if (route !== null) {
-  //     console.log('dispatch location: ', route);
-  //     router.dispatch(route);
-  //   }
-  // }, false);
-
   var prevLoc = null;
   var loc;
 
@@ -210,6 +177,7 @@ function registerRouting() {
     if (loc !== prevLoc) {
       router.dispatch(loc);
       prevLoc = loc;
+      dom.scrollTo(document.body, 0, 5000);
     }
 
     setTimeout(pingLocation, 10);
@@ -217,18 +185,6 @@ function registerRouting() {
 
   pingLocation();
 }
-
-// function dispatchRouting() {
-//   var loc = location.hash.substring(1);
-
-//   if (! loc) {
-//     loc = '/';
-//   }
-
-//   console.log('dispatch start location: ', loc);
-  
-//   router.dispatch(loc);
-// }
 
 function registerCart() {
   var el = document.createElement('DIV');
@@ -276,7 +232,6 @@ router.get('/checkout', function() {
 });
 
 registerRouting();
-// dispatchRouting();
 }, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./dom.js":5,"./parts/products.js":6,"./parts/product.js":7,"./parts/cart.js":8,"./parts/checkout.js":9}],
 2: [function(require, module, exports) {
 
@@ -2374,7 +2329,7 @@ module.exports = function(arr, fn, initial){
 
 module.exports = {
   removeChildNodes: function(node) {
-    if (! node) {
+    if (! this.isNode(node)) {
       console.warn('node is wrong.');
       return;
     }
@@ -2410,6 +2365,18 @@ module.exports = {
       typeof Node === "object" ? obj instanceof Node : 
       obj && typeof obj === "object" && typeof obj.nodeType === "number" && typeof obj.nodeName==="string"
     );
+  },
+  scrollTo: function(el, to, duration) {
+    // duration = duration || 100;
+
+    // var difference = to - el.scrollTop;
+    // var perTick = difference / duration * 10;
+
+    // setTimeout(function() {
+      el.scrollTop = to;
+    //   if (el.scrollTop <= to) return;
+    //   scrollTo(el, to, duration - 10);
+    // }, 10);
   }
 };
 }, {}],

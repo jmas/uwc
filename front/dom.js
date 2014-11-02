@@ -3,7 +3,7 @@
 
 module.exports = {
   removeChildNodes: function(node) {
-    if (! node) {
+    if (! this.isNode(node)) {
       console.warn('node is wrong.');
       return;
     }
@@ -39,5 +39,17 @@ module.exports = {
       typeof Node === "object" ? obj instanceof Node : 
       obj && typeof obj === "object" && typeof obj.nodeType === "number" && typeof obj.nodeName==="string"
     );
+  },
+  scrollTo: function(el, to, duration) {
+    // duration = duration || 100;
+
+    // var difference = to - el.scrollTop;
+    // var perTick = difference / duration * 10;
+
+    // setTimeout(function() {
+      el.scrollTop = to;
+    //   if (el.scrollTop <= to) return;
+    //   scrollTo(el, to, duration - 10);
+    // }, 10);
   }
 };
