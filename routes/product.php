@@ -84,8 +84,11 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
 // Recomendation: Viewed with
 
 $app->get('/view-with/:productId', function($productId) use ($app) {
+  $result = [];
 
-
+  $app->response->write(json_encode([
+    'result'=>$result,
+  ]));
 });
 
 

@@ -30,7 +30,7 @@ try {
 
 // Functions
 
-function createSessionUser($sessionKey) use ($app) {
+function createSessionUser($app, $sessionKey) {
   $sql = 'INSERT INTO user(session_key) VALUES(:session_key)';
 
   $stmt = $app->db->prepare($sql);
@@ -44,20 +44,37 @@ function createSessionUser($sessionKey) use ($app) {
   return $userId;
 }
 
+function createOrder($app, $userId) {
+  $sql = 'INSERT INTO user_order(user_id) VALUES(:userId)';
+    
+  $stmt = $app->db->prepare($sql);
+  
+  if ($stmt->execute([ ':userId'=>$userId ]) === false) {
+    $app->halt(503, 'Query id not executable!');
+  }
+
+  $orderId = $app->db->lastInsertId();
+  
+  
+
+  return $orderId;
+}
+
 
 // Get and set user.
 
-$app->hook('slim.before.router', function () use ($app) {
+$app->hook('slim.before.router', function() use ($app) {
   // If user is not defined - create new user
   if (empty($_SESSION['user_id'])) {
-    $userId = createSessionUser(session_id());
+    $userId = createSessionUser($app, session_id());
 
     $_SESSION['user_id'] = $userId;
   }
 
   $userId = $_SESSION['user_id'];
 
-  $sql = 'SELECT id FROM user WHERE id=:userId)';
+  // Check user exists
+  $sql = 'SELECT id FROM user WHERE id=:userId';
     
   $stmt = $app->db->prepare($sql);
 
@@ -66,22 +83,31 @@ $app->hook('slim.before.router', function () use ($app) {
   }
 
   if ($stmt->fetch() === false) {
-    $userId = createSessionUser(session_id());
+    $userId = createSessionUser($app, session_id());
+
+    $_SESSION['user_id'] = $userId;
   }
 
   // If order is not difined at session - create new order
-  if (empty($_SESSION['order_id'])) {
-    
-    $sql = 'INSERT INTO user_order(user_id) VALUES(:userId)';
-    
-    $stmt = $app->db->prepare($sql);
-    
-    if ($stmt->execute([ ':userId'=>$userId ]) === false) {
-      $app->halt(503, 'Query id not executable!');
-    }
+  if (empty($_SESSION['order_id'])) {  
+    $orderId = createOrder($app, $userId);
 
-    $orderId = $app->db->lastInsertId();
+    $_SESSION['order_id'] = $orderId;
+  }
+
+  $orderId = $_SESSION['order_id'];
+
+  // Check order exists
+  $sql = 'SELECT id FROM user_order WHERE id=:orderId';
     
+  $stmt = $app->db->prepare($sql);
+
+  if ($stmt->execute([ ':orderId'=>$orderId ]) === false) {
+    $app->halt(503, 'Query id not executable!');
+  }
+
+  if ($stmt->fetch() === false) {
+    $orderId = createOrder($app, $userId);
     $_SESSION['order_id'] = $orderId;
   }
 });

@@ -2932,74 +2932,75 @@ function loadProductAndRecomends(id) {
       request.get('/api/product/' + id).end(function(response) {
         if (! response.ok) {
           emitter.emit('error', 'Не удалось получить данные с сервера.');
+          next();
           return;
         }
 
-        if (typeof response.body.result === 'undefined') {
-          emitter.emit('error', 'Результат неизвестен.');
-          return;
+        if (typeof response.body.result !== 'undefined') {
+          product = response.body.result;
+        } else {
+          product = {};
         }
-
-        product = response.body.result;
 
         next();
+
+        console.log('loadProducts - product.');
       });
     },
     function(next) { // load recomends by view
       request.get('/api/product/view-with/' + id).end(function(response) {
-        next();
-        return;
-
         if (! response.ok) {
           emitter.emit('error', 'Не удалось получить данные с сервера.');
+          next();
           return;
         }
 
-        if (typeof response.body.result === 'undefined') {
-          emitter.emit('error', 'Результат неизвестен.');
-          return;
+        if (typeof response.body.result !== 'undefined') {
+          viewWithProducts = response.body.result;
+        } else {
+          viewWithProducts = [];
         }
-
-        viewWithProducts = response.body.result;
 
         next();
+
+        console.log('loadProducts - view-with.');
       });
     },
     function(next) { // load recomends by cart
       request.get('/api/product/cart-with/' + id).end(function(response) {
-        next();
-        return;
-
         if (! response.ok) {
           emitter.emit('error', 'Не удалось получить данные с сервера.');
+          next();
           return;
         }
 
-        if (typeof response.body.result === 'undefined') {
-          emitter.emit('error', 'Результат неизвестен.');
-          return;
+        if (typeof response.body.result !== 'undefined') {
+          cartWithProducts = response.body.result;
+        } else {
+          cartWithProducts = [];
         }
-
-        cartWithProducts = response.body.result;
 
         next();
+
+        console.log('loadProducts - cart-with.');
       });
     },
     function(next) { // load recomends by buy
       request.get('/api/product/buy-with/' + id).end(function(response) {
         if (! response.ok) {
           emitter.emit('error', 'Не удалось получить данные с сервера.');
+          next();
           return;
         }
 
-        if (typeof response.body.result === 'undefined') {
-          emitter.emit('error', 'Результат неизвестен.');
-          return;
+        if (typeof response.body.result !== 'undefined') {
+          buyWithProducts = response.body.result;
+        } else {
+          buyWithProducts = [];
         }
-
-        buyWithProducts = response.body.result;
 
         next();
+        console.log('loadProducts - buy-with.');
       });
     }
   ], throttle(render));
