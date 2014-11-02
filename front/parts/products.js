@@ -6,6 +6,7 @@
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
 var throttle = require('jmas/throttle');
+var fmt = require('../format.js');
 
 var productsTemplate = require('../templates/products.hg');
 var productItemTemplate = require('../templates/product-item.hg');
@@ -22,8 +23,12 @@ var products = storeService.products;
 function render() {
 	var items = [];
 
-	for (var i=0,len=products.length; i<len; i++) {
-		items.push(productItemTemplate.render(products.get(i)));
+	for (var item,i=0,len=products.length; i<len; i++) {
+		item = products.get(i);
+		
+		item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
+
+		items.push(productItemTemplate.render(item));
 	}
 
 	var html = productsTemplate.render({

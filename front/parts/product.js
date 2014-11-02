@@ -7,6 +7,8 @@ var dom = require('../dom.js');
 var throttle = require('jmas/throttle');
 var parallel = require('jmas/parallel');
 var request = require('visionmedia/superagent');
+var fmt = require('../format.js');
+
 var productTemplate = require('../templates/product.hg');
 var productViewTemplate = require('../templates/product-view.hg');
 var productItemTemplate = require('../templates/product-item.hg');
@@ -80,7 +82,11 @@ function render() {
 function renderList(items, itemTemplate) {
   var html = [];
 
-  for (var i=0,len=items.length; i<len; i++) {
+  for (var item,i=0,len=items.length; i<len; i++) {
+    item = items[i];
+    
+    item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
+
     html.push(itemTemplate.render(items[i]));
   }
 

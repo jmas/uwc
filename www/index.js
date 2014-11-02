@@ -2406,6 +2406,7 @@ module.exports = {
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
 var throttle = require('jmas/throttle');
+var fmt = require('../format.js');
 
 var productsTemplate = require('../templates/products.hg');
 var productItemTemplate = require('../templates/product-item.hg');
@@ -2422,8 +2423,12 @@ var products = storeService.products;
 function render() {
 	var items = [];
 
-	for (var i=0,len=products.length; i<len; i++) {
-		items.push(productItemTemplate.render(products.get(i)));
+	for (var item,i=0,len=products.length; i<len; i++) {
+		item = products.get(i);
+		
+		item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
+
+		items.push(productItemTemplate.render(item));
 	}
 
 	var html = productsTemplate.render({
@@ -2454,7 +2459,7 @@ module.exports = function(rootEl, emitter) {
 
 	return partEl;
 };
-}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/products.hg":16,"../templates/product-item.hg":17}],
+}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../format.js":16,"../templates/products.hg":17,"../templates/product-item.hg":18}],
 15: [function(require, module, exports) {
 (function(rootScope) {
   
@@ -2488,9 +2493,19 @@ module.exports = function(rootEl, emitter) {
 })(this);
 }, {}],
 16: [function(require, module, exports) {
+module.exports = {
+  formatCur: function(num, n, x, s, c) {
+    var re = '\\d(?=(\\d{' + (x || 3) + '})+' + (n > 0 ? '\\D' : '$') + ')',
+      num = num.toFixed(Math.max(0, ~~n));
+
+    return (c ? num.replace('.', c) : num).replace(new RegExp(re, 'g'), '$&' + (s || ','));
+  }
+};
+}, {}],
+17: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list hor-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
-18: [function(require, module, exports) {
+}, {"hogan-runtime":19}],
+19: [function(require, module, exports) {
 /*
  *  Copyright 2011 Twitter, Inc.
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -2834,9 +2849,9 @@ var Hogan = {};
 })(typeof exports !== 'undefined' ? exports : Hogan);
 
 }, {}],
-17: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
+18: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":19}],
 7: [function(require, module, exports) {
 "use strict";
 
@@ -2847,6 +2862,8 @@ var dom = require('../dom.js');
 var throttle = require('jmas/throttle');
 var parallel = require('jmas/parallel');
 var request = require('visionmedia/superagent');
+var fmt = require('../format.js');
+
 var productTemplate = require('../templates/product.hg');
 var productViewTemplate = require('../templates/product-view.hg');
 var productItemTemplate = require('../templates/product-item.hg');
@@ -2860,6 +2877,7 @@ var product = {};
 var buyWithProducts = [];
 var viewWithProducts = [];
 var cartWithProducts = [];
+var emitter = null;
 
 
 // Functions
@@ -2919,7 +2937,11 @@ function render() {
 function renderList(items, itemTemplate) {
   var html = [];
 
-  for (var i=0,len=items.length; i<len; i++) {
+  for (var item,i=0,len=items.length; i<len; i++) {
+    item = items[i];
+    
+    item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
+
     html.push(itemTemplate.render(items[i]));
   }
 
@@ -3009,8 +3031,10 @@ function loadProductAndRecomends(id) {
 
 // Exports
 
-module.exports = function(rootEl, emitter) {
+module.exports = function(rootEl, _emitter) {
   console.log('product bootstrap.');
+
+  emitter = _emitter;
 
   emitter.on('page.activated.product', function(id) {
     loadProductAndRecomends(id);
@@ -3020,8 +3044,8 @@ module.exports = function(rootEl, emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"visionmedia/superagent":12,"../templates/product.hg":20,"../templates/product-view.hg":21,"../templates/product-item.hg":17,"../templates/recomends-empty.hg":22}],
-19: [function(require, module, exports) {
+}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":20,"visionmedia/superagent":12,"../format.js":16,"../templates/product.hg":21,"../templates/product-view.hg":22,"../templates/product-item.hg":18,"../templates/recomends-empty.hg":23}],
+20: [function(require, module, exports) {
 (function() {
   'use strict';
   
@@ -3070,15 +3094,15 @@ module.exports = function(rootEl, emitter) {
 })();
 
 }, {}],
-20: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
 21: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":19}],
 22: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":19}],
+23: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty recomends-empty\">Эта рекомендация недоступна, но скоро здесь появятся товары.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
+}, {"hogan-runtime":19}],
 8: [function(require, module, exports) {
 "use strict";
 
@@ -3088,6 +3112,7 @@ var Template = require('hogan-runtime').Template;module.exports = new Template({
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
 var throttle = require('jmas/throttle');
+var fmt = require('../format.js');
 
 var cartTemplate = require('../templates/cart.hg');
 var cartEmptyTemplate = require('../templates/cart-empty.hg');
@@ -3113,6 +3138,7 @@ function render() {
 
     for (var item,i=0,len=products.length; i<len; i++) {
       item = products.get(i);
+      item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
 
       items.push(productItemTemplate.render(item));
 
@@ -3125,7 +3151,7 @@ function render() {
 
     cartCheckoutEl.classList.add('active');
 
-    cartCheckoutPriceEl.innerHTML = Math.ceil(price * 100) / 100;
+    cartCheckoutPriceEl.innerHTML = fmt.formatCur(parseFloat(Math.ceil(price * 100) / 100), 2, 3, ' ', ',');
   } else {
     cartCheckoutEl.classList.remove('active');
     html = cartEmptyTemplate.render();
@@ -3176,13 +3202,13 @@ module.exports = function(rootEl, emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/cart.hg":23,"../templates/cart-empty.hg":24,"../templates/product-item.hg":17}],
-23: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
+}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../format.js":16,"../templates/cart.hg":24,"../templates/cart-empty.hg":25,"../templates/product-item.hg":18}],
 24: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":19}],
+25: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":18}],
+}, {"hogan-runtime":19}],
 9: [function(require, module, exports) {
 "use strict";
 
@@ -3207,4 +3233,4 @@ module.exports = function(rootEl, emitter) {
 
 	return partEl;
 };
-}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"../store-service.js":4}]}, {}, {"1":""})
+}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":20,"../store-service.js":4}]}, {}, {"1":""})

@@ -6,6 +6,7 @@
 var dom = require('../dom.js');
 var storeService = require('../store-service.js');
 var throttle = require('jmas/throttle');
+var fmt = require('../format.js');
 
 var cartTemplate = require('../templates/cart.hg');
 var cartEmptyTemplate = require('../templates/cart-empty.hg');
@@ -31,6 +32,7 @@ function render() {
 
     for (var item,i=0,len=products.length; i<len; i++) {
       item = products.get(i);
+      item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
 
       items.push(productItemTemplate.render(item));
 
@@ -43,7 +45,7 @@ function render() {
 
     cartCheckoutEl.classList.add('active');
 
-    cartCheckoutPriceEl.innerHTML = Math.ceil(price * 100) / 100;
+    cartCheckoutPriceEl.innerHTML = fmt.formatCur(parseFloat(Math.ceil(price * 100) / 100), 2, 3, ' ', ',');
   } else {
     cartCheckoutEl.classList.remove('active');
     html = cartEmptyTemplate.render();
