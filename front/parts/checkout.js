@@ -17,15 +17,11 @@ var partEl = document.createElement('DIV');
 var checkoutHtml = checkoutTemplate.render();
 dom.replaceHtml(partEl, checkoutHtml);
 
+
 // Exports
 
 module.exports = function(rootEl, emitter) {
   console.log('checkout bootstrap.');
-
-  emitter.on('checkout.finished', function() {
-    alert('Checkouted!');
-    location.href = '#/checkout-prompt';
-  });
 
   return partEl;
 };

@@ -6,7 +6,6 @@
 var dom = require('../dom.js');
 var throttle = require('jmas/throttle');
 var parallel = require('jmas/parallel');
-var waterfall = require('jmas/waterfall');
 var request = require('visionmedia/superagent');
 var fmt = require('../format.js');
 

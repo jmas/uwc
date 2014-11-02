@@ -103,14 +103,14 @@ $app->get('/products', function() use ($app) {
 
 // Delete one or more products
 
-$app->delete('/products/:productId', function() use ($app) {
+$app->delete('/products/:productId', function($productId) use ($app) {
   if (empty($_SESSION['order_id'])) {
     $app->halt(503, 'Order is not defined in current session!');
   }
 
   $orderId = $_SESSION['order_id'];
 
-  $sql = 'DELETE FROM order_product WHERE prduct_id=:productId AND order_id=:orderId';
+  $sql = 'DELETE FROM order_product WHERE product_id=:productId AND order_id=:orderId LIMIT 1';
 
   $stmt = $app->db->prepare($sql);
 

@@ -15,6 +15,7 @@ var productItemTemplate = require('../templates/product-item.hg');
 
 // Local vars
 
+var emitter;
 var partEl = document.createElement('DIV');
 var cartCheckoutEl = document.getElementById('cart-checkout');
 var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
@@ -62,7 +63,13 @@ function registerCartEventHandler() {
     var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
     if (productId !== null) {
-      storeService.addProductToCart(productId, amount);
+      if (typeof event.target.hasAttribute !== 'undefined' && event.target.hasAttribute('data-cart-remove')) {
+        storeService.removeProductFromCart(productId);
+        emitter.emit('success', 'Товар убран из корзины');
+      } else {
+        storeService.addProductToCart(productId, amount);
+        emitter.emit('success', 'Товар добавлен в корзину');
+      }
     }
   }, false);
 }
@@ -86,8 +93,10 @@ registerCheckoutEventHandler();
 
 // Exports
 
-module.exports = function(rootEl, emitter) {
+module.exports = function(rootEl, _emitter) {
   console.log('cart bootstrap.');
+
+  emitter = _emitter;
 
   storeService.loadCartProducts();
 

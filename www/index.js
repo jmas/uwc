@@ -101,24 +101,29 @@ if (typeof console === 'undefined') {
 
 var Router = require('component/router');
 var Emitter = require('component/emitter');
+var Arr = require('jmas/arr');
 
 var storeService = require('./store-service.js');
 
 var dom = require('./dom.js');
+var notifyTemplate = require('./templates/notify.hg');
 
 var productsPartFn = require('./parts/products.js');
 var productPartFn = require('./parts/product.js');
 var cartPartFn = require('./parts/cart.js');
 var checkoutPartFn = require('./parts/checkout.js');
+var messagesPartFn = require('./parts/messages.js');
 
 
 // Local vars
 
 var pageListEl = document.getElementById('page-list');
 var cartContentEl = document.getElementById('cart-content');
+var notifyEl = document.getElementById('notify');
 var pagesEls = [];
 var emitter = new Emitter;
 var router = new Router;
+var notifies = new Arr;
 
 
 // Functions
@@ -200,15 +205,64 @@ function registerCart() {
   cartContentEl.appendChild(el);
 }
 
+function registerMessages() {
+  var el = document.createElement('DIV');
+  
+  if (typeof cartPartFn === 'function') {
+    var partEl = messagesPartFn(el, emitter);
+
+    if (typeof partEl !== 'undefined' && partEl !== null && dom.isNode(partEl)) {
+      el.appendChild(partEl);
+    }
+  }
+
+  cartContentEl.appendChild(el);
+}
+
+function showNotify(type, message) {
+  type = type || '';
+
+  notifies.push({
+    type: type,
+    message: message
+  });
+
+  setTimeout(function() {
+    notifies.splice(0, 1);
+  }, 5000);
+}
+
+function renderNotify() {
+  var html = notifyTemplate.render({
+    notifies: notifies.slice(0)
+  });
+
+  dom.replaceHtml(notifyEl, html);
+}
+
 
 // Bootstrap
+
+notifies.on('change', renderNotify);
+
+emitter.on('error', function(msg) {
+  showNotify('error', msg);
+});
+
+emitter.on('info', function(msg) {
+  showNotify('info', msg);
+});
+
+emitter.on('success', function(msg) {
+  showNotify('success', msg);
+});
 
 storeService.on('error', function(msg) {
   emitter.emit('error', msg);
 });
 
-storeService.on('checkout', function() {
-  router.dispatch('/checkout');
+storeService.on('checkout.finished', function() {
+  location.href = '#/checkout-prompt';
 });
 
 addPage('products', productsPartFn);
@@ -232,7 +286,7 @@ router.get('/checkout-prompt', function() {
 });
 
 registerRouting();
-}, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./dom.js":5,"./parts/products.js":6,"./parts/product.js":7,"./parts/cart.js":8,"./parts/checkout.js":9}],
+}, {"component/router":2,"component/emitter":3,"jmas/arr":4,"./store-service.js":5,"./dom.js":6,"./templates/notify.hg":7,"./parts/products.js":8,"./parts/product.js":9,"./parts/cart.js":10,"./parts/checkout.js":11,"./parts/messages.js":12}],
 2: [function(require, module, exports) {
 
 /**
@@ -321,8 +375,8 @@ Router.prototype.teardown = function(){
   route.call('after', this.args);
 };
 
-}, {"route":10}],
-10: [function(require, module, exports) {
+}, {"route":13}],
+13: [function(require, module, exports) {
 
 /**
  * Module dependencies.
@@ -436,8 +490,8 @@ Route.prototype.match = function(path){
   return params;
 };
 
-}, {"path-to-regexp":11}],
-11: [function(require, module, exports) {
+}, {"path-to-regexp":14}],
+14: [function(require, module, exports) {
 /**
  * Expose `pathtoRegexp`.
  */
@@ -776,6 +830,341 @@ Emitter.prototype.hasListeners = function(event){
 
 }, {}],
 4: [function(require, module, exports) {
+(function(rootScope) {
+  
+  // original Array methods
+  var
+    arrayPop = Array.prototype.pop,
+    arrayPush = Array.prototype.push,
+    arrayReverse = Array.prototype.reverse,
+    arrayShift = Array.prototype.shift,
+    arraySort = Array.prototype.sort,
+    arraySplice = Array.prototype.splice,
+    arrayUnshift = Array.prototype.unshift;
+  
+  /**
+   * Constructor.
+   */
+  function Arr() {
+    var instance = this;
+    
+    if (! instance instanceof Arr) {
+      instance = new Arr();
+    }
+        
+    if (arguments.length === 1 && typeof arguments[0] === 'number' && arguments[0] % 1 === 0) {
+      arrayPush.apply(instance, new Array(arguments[0]));
+    } else {
+      arrayPush.apply(instance, arguments);
+    }
+    
+    instance.events = {};
+    
+    return instance;
+  };
+  
+  // Attach prototype
+  Arr.prototype = [];
+  
+  /**
+   * Attached events.
+   */
+  Arr.prototype.events = {};
+   
+  /**
+   * Get value by index.
+   */
+  Arr.prototype.get = function(index, defaultValue) {
+    return typeof this[index] === 'undefined' ? defaultValue: this[index];
+  };
+   
+  /**
+   * Attach event handler.
+   */
+  Arr.prototype.on = function(eventName, handler) {
+    if (typeof this.events[eventName] === 'undefined') {
+      this.events[eventName] = [];
+    }
+
+    this.events[eventName].push(handler);
+
+    return this;
+  };
+   
+  /**
+   * Trigger event.
+   */
+  Arr.prototype.trigger = function(eventName, args) {
+    args = args || [];
+
+    if (eventName instanceof Array) {
+      for (var k=0, klen=eventName.length; k<klen; k++) {
+        if (typeof this.events[eventName[k]] === 'undefined') {
+          continue;
+        }
+       
+        for (var i=0,len=this.events[eventName[k]].length; i<len; i++) {
+          this.events[eventName[k]][i].apply(this, [args]);
+        }
+      }
+    } else {
+      for (var i=0,len=this.events[eventName].length; i<len; i++) {
+        this.events[eventName][i].apply(this, [args]);
+      }
+    }
+
+    return this;
+  };
+   
+  /**
+   * Update items by handler.
+   */
+  Arr.prototype.update = function(handler) {
+    if (! handler instanceof Function) {
+      throw new Error('handler should be an Function');
+    }
+    
+    var oldValue, newValue, i, result = [];
+   
+    for (i=0,len=this.length; i<len; i++) {
+      oldValue = this[i];
+      newValue = handler.apply(this, [oldValue, i]);
+      
+      if (typeof newValue !== 'undefined') {
+        this[i] = newValue;
+        result.push(newValue);
+      }
+    }
+   
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
+        this.trigger(['change', 'update'], {
+          type: 'update',
+          items: result
+        });
+      }
+    }
+   
+    return this;
+  };
+  
+  /**
+   * Insert array of items.
+   */
+  Arr.prototype.insert = function(items) {
+    if (! items instanceof Array) {
+      throw new Error('items should be an Array');
+    }
+    
+    arrayPush.apply(this, items);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined') {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: items
+      });
+    }
+
+    return this;
+  };
+  
+  /**
+   * Remove items by handler.
+   */
+  Arr.prototype.remove = function(handler) {
+    if (typeof handler === 'undefined') { // drop all items
+      if (this.length > 0) {
+        this.splice(0, this.length);
+      }
+      
+      return this;
+    }
+    
+    if (! handler instanceof Function) {
+      throw new Error('handler should be an Function');
+    }
+    
+    var result = [], stay = [], i;
+
+    for (i=0, len=this.length; i<len; i++) {
+      isRemove = handler.apply(this, [this[i], i]);
+      
+      if (isRemove === true) {
+        result.push(this[i]);
+      } else {
+        stay.push(this[i]);
+      }
+    }
+
+    arraySplice.apply(this, [0, this.length]);
+    arrayPush.apply(this, stay);
+
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined') {
+        this.trigger(['change', 'remove'], {
+          type: 'remove',
+          items: result
+        });
+      }
+    }
+   
+    return this;
+  };
+  
+  /**
+   * Set value by index.
+   */
+  Arr.prototype.set = function(index, value) {
+    if (! index instanceof Number) {
+      throw new Error('index should be an Number');
+    }
+    
+    this[index] = value;
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: [this[index]]
+      });
+    }
+
+    return this;
+  };
+   
+  /**
+   * Removes the last element from an array and returns that element.
+   */
+  Arr.prototype.pop = function() {
+    var result = arrayPop.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+      this.trigger(['change', 'remove'], {
+        type: 'remove',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds one or more elements to the end of an array and returns the new length of the array.
+   */
+  Arr.prototype.push = function() {
+    var result = arrayPush.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: Array.prototype.slice.call(arguments, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Reverses the order of the elements of an array — the first becomes the last, and the last becomes the first.
+   */
+  Arr.prototype.reverse = function() {
+    var result = arrayReverse.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: Array.prototype.slice.call(result, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Removes the first element from an array and returns that element.
+   */
+  Arr.prototype.shift = function() {
+    var result = arrayShift.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+      this.trigger(['change', 'remove'], {
+        type: 'remove',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Sorts the elements of an array in place and returns the array.
+   */
+  Arr.prototype.sort = function() {
+    var result = arraySort.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
+      this.trigger(['change', 'update'], {
+        type: 'update',
+        items: Array.prototype.slice.call(result, 0)
+      });
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds and/or removes elements from an array.
+   */
+  Arr.prototype.splice = function() {
+    var result = arraySplice.apply(this, arguments);
+
+    if (result.length > 0) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
+        this.trigger(['change', 'remove'], {
+          type: 'remove',
+          items: Array.prototype.slice.call(result, 0)
+        });
+      }
+    }
+
+    if (arguments.length > 2) {
+      if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+        this.trigger(['change', 'insert'], {
+          type: 'insert',
+          items: Array.prototype.slice.call(arguments, 2)
+        });
+      }
+    }
+
+    return result;
+  };
+   
+  /**
+   * Adds one or more elements to the front of an array and returns the new length of the array.
+   */
+  Arr.prototype.unshift = function() {
+    var result = arrayUnshift.apply(this, arguments);
+
+    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
+      this.trigger(['change', 'insert'], {
+        type: 'insert',
+        items: [result]
+      });
+    }
+
+    return result;
+  };
+  
+  // exports
+
+  if (typeof module !== 'undefined') {
+    module.exports = Arr;
+  } else {
+    rootScope.Arr = Arr;
+  }
+})(this);
+
+}, {}],
+5: [function(require, module, exports) {
 "use strict";
 
 
@@ -810,6 +1199,39 @@ module.exports = new Emitter({
     });
   },
 
+  removeProductFromCart: function(productId) {
+    var _this = this;
+
+    request.del('/api/order/products/' + productId).end(function(response) {
+      if (! response.ok) {
+        _this.emit('error', 'Не удалось получить данные с сервера.');
+        return;
+      }
+
+      if (typeof response.body.result === 'undefined') {
+        _this.emit('error', 'Результат неизвестен.');
+        return;
+      }
+
+      _this.cartProducts.remove(function(item) {
+        return item.id == productId;
+      });
+
+      _this.products.update(function(item) {
+        if (item.id == productId) {
+          item._inCart = false;
+          return item;
+        }
+      });
+
+      try {
+        _this.updateProductsInCart();
+      } catch(e) {
+        console.error(e);
+      }
+    });
+  },
+
   loadCartProducts: function() {
     var _this = this;
 
@@ -825,14 +1247,43 @@ module.exports = new Emitter({
       }
 
       try {
+        var products = response.body.result;
+
+        for (var i=0,len=products.length; i<len; i++) {
+          products[i]._inCart = true;
+        }
+
         _this.cartProducts.length = 0;
-        _this.cartProducts.insert(response.body.result);
+        _this.cartProducts.insert(products);
       } catch (e) {
         console.error(e);
       }
 
+      _this.updateProductsInCart();
+
       console.log('loaded cart products');
     });
+  },
+
+  updateProductsInCart: function() {
+    var products = this.products.slice(0);
+    var cartProducts = this.cartProducts.slice(0);
+
+    for (var i=0,leni=products.length; i<leni; i++) {
+      for (var j=0,lenj=cartProducts.length; j<lenj; j++) {
+        if (products[i].id === cartProducts[j].id) {
+          products[i]._inCart = true;
+          break;
+        }
+      }
+
+      if (typeof products[i]._inCart === 'undefined') {
+        products[i]._inCart = false;
+      }
+    }
+
+    this.products.length = 0;
+    this.products.insert(products);
   },
   
   loadProducts: function() {
@@ -850,8 +1301,12 @@ module.exports = new Emitter({
       }
 
       try {
+        var products = response.body.result;
+
         _this.products.length = 0;
-        _this.products.insert(response.body.result);
+        _this.products.insert(products);
+
+        _this.updateProductsInCart();
       } catch (e) {
         console.error(e);
       }
@@ -882,8 +1337,8 @@ module.exports = new Emitter({
     });
   }
 });
-}, {"visionmedia/superagent":12,"jmas/arr":13,"component/emitter":3}],
-12: [function(require, module, exports) {
+}, {"visionmedia/superagent":15,"jmas/arr":4,"component/emitter":3}],
+15: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -1961,8 +2416,8 @@ request.put = function(url, data, fn){
 
 module.exports = request;
 
-}, {"emitter":3,"reduce":14}],
-14: [function(require, module, exports) {
+}, {"emitter":3,"reduce":16}],
+16: [function(require, module, exports) {
 
 /**
  * Reduce `arr` with `fn`.
@@ -1988,342 +2443,7 @@ module.exports = function(arr, fn, initial){
   return curr;
 };
 }, {}],
-13: [function(require, module, exports) {
-(function(rootScope) {
-  
-  // original Array methods
-  var
-    arrayPop = Array.prototype.pop,
-    arrayPush = Array.prototype.push,
-    arrayReverse = Array.prototype.reverse,
-    arrayShift = Array.prototype.shift,
-    arraySort = Array.prototype.sort,
-    arraySplice = Array.prototype.splice,
-    arrayUnshift = Array.prototype.unshift;
-  
-  /**
-   * Constructor.
-   */
-  function Arr() {
-    var instance = this;
-    
-    if (! instance instanceof Arr) {
-      instance = new Arr();
-    }
-        
-    if (arguments.length === 1 && typeof arguments[0] === 'number' && arguments[0] % 1 === 0) {
-      arrayPush.apply(instance, new Array(arguments[0]));
-    } else {
-      arrayPush.apply(instance, arguments);
-    }
-    
-    instance.events = {};
-    
-    return instance;
-  };
-  
-  // Attach prototype
-  Arr.prototype = [];
-  
-  /**
-   * Attached events.
-   */
-  Arr.prototype.events = {};
-   
-  /**
-   * Get value by index.
-   */
-  Arr.prototype.get = function(index, defaultValue) {
-    return typeof this[index] === 'undefined' ? defaultValue: this[index];
-  };
-   
-  /**
-   * Attach event handler.
-   */
-  Arr.prototype.on = function(eventName, handler) {
-    if (typeof this.events[eventName] === 'undefined') {
-      this.events[eventName] = [];
-    }
-
-    this.events[eventName].push(handler);
-
-    return this;
-  };
-   
-  /**
-   * Trigger event.
-   */
-  Arr.prototype.trigger = function(eventName, args) {
-    args = args || [];
-
-    if (eventName instanceof Array) {
-      for (var k=0, klen=eventName.length; k<klen; k++) {
-        if (typeof this.events[eventName[k]] === 'undefined') {
-          continue;
-        }
-       
-        for (var i=0,len=this.events[eventName[k]].length; i<len; i++) {
-          this.events[eventName[k]][i].apply(this, [args]);
-        }
-      }
-    } else {
-      for (var i=0,len=this.events[eventName].length; i<len; i++) {
-        this.events[eventName][i].apply(this, [args]);
-      }
-    }
-
-    return this;
-  };
-   
-  /**
-   * Update items by handler.
-   */
-  Arr.prototype.update = function(handler) {
-    if (! handler instanceof Function) {
-      throw new Error('handler should be an Function');
-    }
-    
-    var oldValue, newValue, i, result = [];
-   
-    for (i=0,len=this.length; i<len; i++) {
-      oldValue = this[i];
-      newValue = handler.apply(this, [oldValue, i]);
-      
-      if (typeof newValue !== 'undefined') {
-        this[i] = newValue;
-        result.push(newValue);
-      }
-    }
-   
-    if (result.length > 0) {
-      if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
-        this.trigger(['change', 'update'], {
-          type: 'update',
-          items: result
-        });
-      }
-    }
-   
-    return this;
-  };
-  
-  /**
-   * Insert array of items.
-   */
-  Arr.prototype.insert = function(items) {
-    if (! items instanceof Array) {
-      throw new Error('items should be an Array');
-    }
-    
-    arrayPush.apply(this, items);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined') {
-      this.trigger(['change', 'insert'], {
-        type: 'insert',
-        items: items
-      });
-    }
-
-    return this;
-  };
-  
-  /**
-   * Remove items by handler.
-   */
-  Arr.prototype.remove = function(handler) {
-    if (typeof handler === 'undefined') { // drop all items
-      if (this.length > 0) {
-        this.splice(0, this.length);
-      }
-      
-      return this;
-    }
-    
-    if (! handler instanceof Function) {
-      throw new Error('handler should be an Function');
-    }
-    
-    var result = [], stay = [], i;
-
-    for (i=0, len=this.length; i<len; i++) {
-      isRemove = handler.apply(this, [this[i], i]);
-      
-      if (isRemove === true) {
-        result.push(this[i]);
-      } else {
-        stay.push(this[i]);
-      }
-    }
-
-    arraySplice.apply(this, [0, this.length]);
-    arrayPush.apply(this, stay);
-
-    if (result.length > 0) {
-      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined') {
-        this.trigger(['change', 'remove'], {
-          type: 'remove',
-          items: result
-        });
-      }
-    }
-   
-    return this;
-  };
-  
-  /**
-   * Set value by index.
-   */
-  Arr.prototype.set = function(index, value) {
-    if (! index instanceof Number) {
-      throw new Error('index should be an Number');
-    }
-    
-    this[index] = value;
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined') {
-      this.trigger(['change', 'update'], {
-        type: 'update',
-        items: [this[index]]
-      });
-    }
-
-    return this;
-  };
-   
-  /**
-   * Removes the last element from an array and returns that element.
-   */
-  Arr.prototype.pop = function() {
-    var result = arrayPop.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
-      this.trigger(['change', 'remove'], {
-        type: 'remove',
-        items: [result]
-      });
-    }
-
-    return result;
-  };
-   
-  /**
-   * Adds one or more elements to the end of an array and returns the new length of the array.
-   */
-  Arr.prototype.push = function() {
-    var result = arrayPush.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
-      this.trigger(['change', 'insert'], {
-        type: 'insert',
-        items: Array.prototype.slice.call(arguments, 0)
-      });
-    }
-
-    return result;
-  };
-   
-  /**
-   * Reverses the order of the elements of an array — the first becomes the last, and the last becomes the first.
-   */
-  Arr.prototype.reverse = function() {
-    var result = arrayReverse.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
-      this.trigger(['change', 'update'], {
-        type: 'update',
-        items: Array.prototype.slice.call(result, 0)
-      });
-    }
-
-    return result;
-  };
-   
-  /**
-   * Removes the first element from an array and returns that element.
-   */
-  Arr.prototype.shift = function() {
-    var result = arrayShift.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
-      this.trigger(['change', 'remove'], {
-        type: 'remove',
-        items: [result]
-      });
-    }
-
-    return result;
-  };
-   
-  /**
-   * Sorts the elements of an array in place and returns the array.
-   */
-  Arr.prototype.sort = function() {
-    var result = arraySort.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.update !== 'undefined' ) {
-      this.trigger(['change', 'update'], {
-        type: 'update',
-        items: Array.prototype.slice.call(result, 0)
-      });
-    }
-
-    return result;
-  };
-   
-  /**
-   * Adds and/or removes elements from an array.
-   */
-  Arr.prototype.splice = function() {
-    var result = arraySplice.apply(this, arguments);
-
-    if (result.length > 0) {
-      if (typeof this.events.change !== 'undefined' || typeof this.events.remove !== 'undefined' ) {
-        this.trigger(['change', 'remove'], {
-          type: 'remove',
-          items: Array.prototype.slice.call(result, 0)
-        });
-      }
-    }
-
-    if (arguments.length > 2) {
-      if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
-        this.trigger(['change', 'insert'], {
-          type: 'insert',
-          items: Array.prototype.slice.call(arguments, 2)
-        });
-      }
-    }
-
-    return result;
-  };
-   
-  /**
-   * Adds one or more elements to the front of an array and returns the new length of the array.
-   */
-  Arr.prototype.unshift = function() {
-    var result = arrayUnshift.apply(this, arguments);
-
-    if (typeof this.events.change !== 'undefined' || typeof this.events.insert !== 'undefined' ) {
-      this.trigger(['change', 'insert'], {
-        type: 'insert',
-        items: [result]
-      });
-    }
-
-    return result;
-  };
-  
-  // exports
-
-  if (typeof module !== 'undefined') {
-    module.exports = Arr;
-  } else {
-    rootScope.Arr = Arr;
-  }
-})(this);
-
-}, {}],
-5: [function(require, module, exports) {
+6: [function(require, module, exports) {
 "use strict";
 
 
@@ -2380,115 +2500,10 @@ module.exports = {
   }
 };
 }, {}],
-6: [function(require, module, exports) {
-"use strict";
-
-
-// Requires
-
-var dom = require('../dom.js');
-var storeService = require('../store-service.js');
-var throttle = require('jmas/throttle');
-var fmt = require('../format.js');
-
-var productsTemplate = require('../templates/products.hg');
-var productItemTemplate = require('../templates/product-item.hg');
-
-
-// Local vars
-
-var partEl = document.createElement('DIV');
-var products = storeService.products;
-
-
-// Functions
-
-function render() {
-	var items = [];
-
-	for (var item,i=0,len=products.length; i<len; i++) {
-		item = products.get(i);
-		
-		item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
-
-		items.push(productItemTemplate.render(item));
-	}
-
-	var html = productsTemplate.render({
-		products: items.join('')
-	});
-
-	dom.replaceHtml(partEl, html);
-
-	console.log('render products');
-}
-
-
-// Bootstrap
-
-products.on('change', throttle(render));
-
-
-// Exports
-
-module.exports = function(rootEl, emitter) {
-	console.log('products bootstrap.');
-
-	emitter.on('page.activated.products', function(name) {
-		storeService.loadProducts();
-
-		console.log('activated products page');
-	});
-
-	return partEl;
-};
-}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../format.js":16,"../templates/products.hg":17,"../templates/product-item.hg":18}],
-15: [function(require, module, exports) {
-(function(rootScope) {
-  
-  var throttle = function(fn, timeout, ctx) {
-    var timer, args, needInvoke;
-
-    return function() {
-      args = arguments;
-      needInvoke = true;
-      ctx = ctx || this;
-
-      timer || (function() {
-        if(needInvoke) {
-          fn.apply(ctx, args);
-          needInvoke = false;
-          timer = setTimeout(arguments.callee, timeout);
-        }
-        else {
-          timer = null;
-        }
-      })();
-    };
-  };
-
-  if (typeof module !== 'undefined') {
-    module.exports = throttle;
-  } else {
-    rootScope.throttle = throttle;
-  }
-
-})(this);
-}, {}],
-16: [function(require, module, exports) {
-module.exports = {
-  formatCur: function(num, n, x, s, c) {
-    var re = '\\d(?=(\\d{' + (x || 3) + '})+' + (n > 0 ? '\\D' : '$') + ')',
-      num = num.toFixed(Math.max(0, ~~n));
-
-    return (c ? num.replace('.', c) : num).replace(new RegExp(re, 'g'), '$&' + (s || ','));
-  }
-};
-}, {}],
+7: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"message-list\" class=\"message-list\">");t.b("\n" + i);if(t.s(t.f("notifies",c,p,1),c,p,0,60,118,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("  <div class=\"message-item ");t.b(t.v(t.f("type",c,p,0)));t.b("\">");t.b(t.v(t.f("message",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
 17: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list hor-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
-19: [function(require, module, exports) {
 /*
  *  Copyright 2011 Twitter, Inc.
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -2832,10 +2847,118 @@ var Hogan = {};
 })(typeof exports !== 'undefined' ? exports : Hogan);
 
 }, {}],
+8: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var dom = require('../dom.js');
+var storeService = require('../store-service.js');
+var throttle = require('jmas/throttle');
+var fmt = require('../format.js');
+
+var productsTemplate = require('../templates/products.hg');
+var productItemTemplate = require('../templates/product-item.hg');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+var products = storeService.products;
+
+
+// Functions
+
+function render() {
+	var items = [];
+
+	for (var item,i=0,len=products.length; i<len; i++) {
+		item = products.get(i);
+		
+		item._priceFormatted = fmt.formatCur(parseFloat(item.price), 2, 3, ' ', ',');
+
+		items.push(productItemTemplate.render(item));
+	}
+
+	var html = productsTemplate.render({
+		products: items.join('')
+	});
+
+	dom.replaceHtml(partEl, html);
+
+	console.log('render products');
+}
+
+
+// Bootstrap
+
+products.on('change', throttle(render));
+
+
+// Exports
+
+module.exports = function(rootEl, emitter) {
+	console.log('products bootstrap.');
+
+	emitter.on('page.activated.products', function(name) {
+		storeService.loadProducts();
+
+		console.log('activated products page');
+	});
+
+	return partEl;
+};
+}, {"../dom.js":6,"../store-service.js":5,"jmas/throttle":18,"../format.js":19,"../templates/products.hg":20,"../templates/product-item.hg":21}],
 18: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
-7: [function(require, module, exports) {
+(function(rootScope) {
+  
+  var throttle = function(fn, timeout, ctx) {
+    var timer, args, needInvoke;
+
+    return function() {
+      args = arguments;
+      needInvoke = true;
+      ctx = ctx || this;
+
+      timer || (function() {
+        if(needInvoke) {
+          fn.apply(ctx, args);
+          needInvoke = false;
+          timer = setTimeout(arguments.callee, timeout);
+        }
+        else {
+          timer = null;
+        }
+      })();
+    };
+  };
+
+  if (typeof module !== 'undefined') {
+    module.exports = throttle;
+  } else {
+    rootScope.throttle = throttle;
+  }
+
+})(this);
+}, {}],
+19: [function(require, module, exports) {
+module.exports = {
+  formatCur: function(num, n, x, s, c) {
+    var re = '\\d(?=(\\d{' + (x || 3) + '})+' + (n > 0 ? '\\D' : '$') + ')',
+      num = num.toFixed(Math.max(0, ~~n));
+
+    return (c ? num.replace('.', c) : num).replace(new RegExp(re, 'g'), '$&' + (s || ','));
+  }
+};
+}, {}],
+20: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"main-product-list\" class=\"product-list hor-list\">");t.b("\n" + i);t.b("	");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+21: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"product-item\">");t.b("\n" + i);t.b("  <a class=\"product-image\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);if(t.s(t.f("amount",c,p,1),c,p,0,137,183,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"amount\">");t.b(t.v(t.f("amount",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <a class=\"name\" href=\"#/product/");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <span class=\"action-btn ");if(t.s(t.f("_inCart",c,p,1),c,p,0,385,391,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("remove");});c.pop();}if(!t.s(t.f("_inCart",c,p,1),c,p,1,0,0,"")){t.b("accept");};t.b("\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" ");if(t.s(t.f("_inCart",c,p,1),c,p,0,466,482,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("data-cart-remove");});c.pop();}t.b(">");if(t.s(t.f("_inCart",c,p,1),c,p,0,507,513,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("Убрать");});c.pop();}if(!t.s(t.f("_inCart",c,p,1),c,p,1,0,0,"")){t.b("В корзину");};t.b("</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+9: [function(require, module, exports) {
 "use strict";
 
 
@@ -2844,7 +2967,6 @@ var Template = require('hogan-runtime').Template;module.exports = new Template({
 var dom = require('../dom.js');
 var throttle = require('jmas/throttle');
 var parallel = require('jmas/parallel');
-var waterfall = require('jmas/waterfall');
 var request = require('visionmedia/superagent');
 var fmt = require('../format.js');
 
@@ -3033,8 +3155,8 @@ module.exports = function(rootEl, _emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":20,"jmas/waterfall":21,"visionmedia/superagent":12,"../format.js":16,"../templates/product.hg":22,"../templates/product-view.hg":23,"../templates/product-item.hg":18,"../templates/recomends-empty.hg":24}],
-20: [function(require, module, exports) {
+}, {"../dom.js":6,"jmas/throttle":18,"jmas/parallel":22,"visionmedia/superagent":15,"../format.js":19,"../templates/product.hg":23,"../templates/product-view.hg":24,"../templates/product-item.hg":21,"../templates/recomends-empty.hg":25}],
+22: [function(require, module, exports) {
 (function() {
   'use strict';
   
@@ -3083,66 +3205,16 @@ module.exports = function(rootEl, _emitter) {
 })();
 
 }, {}],
-21: [function(require, module, exports) {
-(function() {
-  'use strict';
-  
-  var root = this;
-  
-  var nextTick = function (fn) {
-    if (typeof setImmediate === 'function') {
-      setImmediate(fn);
-    } else if (typeof process !== 'undefined' && process.nextTick) {
-      process.nextTick(fn);
-    } else {
-      setTimeout(fn, 0);
-    }
-  };
-  
-  var waterfall = function(tasks, result) {
-    var next = function() {
-      var fn = tasks.shift();
-      var args = Array.prototype.slice.call(arguments, 0);
-      var error = args.shift();
-  
-      if (typeof fn === 'undefined' || error === true) {
-        args.unshift(error);
-        typeof result === 'function' && result.apply(null, args);
-        return;
-      }
-      
-      args.unshift(next);
-      nextTick(function () {
-        typeof fn === 'function' && fn.apply(null, args);
-      });
-    };
-    
-    next(false);
-  };
-  
-  if (typeof define !== 'undefined' && define.amd) {
-    define([], function () {
-      return waterfall;
-    }); // RequireJS
-  } else if (typeof module !== 'undefined' && module.exports) {
-    module.exports = waterfall; // CommonJS
-  } else {
-    root.waterfall = waterfall; // <script>
-  }
-  
-})();
-
-}, {}],
-22: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
 23: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
 24: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+25: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty recomends-empty\">Эта рекомендация недоступна, но скоро здесь появятся товары.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
-8: [function(require, module, exports) {
+}, {"hogan-runtime":17}],
+10: [function(require, module, exports) {
 "use strict";
 
 
@@ -3160,6 +3232,7 @@ var productItemTemplate = require('../templates/product-item.hg');
 
 // Local vars
 
+var emitter;
 var partEl = document.createElement('DIV');
 var cartCheckoutEl = document.getElementById('cart-checkout');
 var cartCheckoutPriceEl = document.getElementById('cart-checkout-price');
@@ -3207,7 +3280,13 @@ function registerCartEventHandler() {
     var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
     if (productId !== null) {
-      storeService.addProductToCart(productId, amount);
+      if (typeof event.target.hasAttribute !== 'undefined' && event.target.hasAttribute('data-cart-remove')) {
+        storeService.removeProductFromCart(productId);
+        emitter.emit('success', 'Товар убран из корзины');
+      } else {
+        storeService.addProductToCart(productId, amount);
+        emitter.emit('success', 'Товар добавлен в корзину');
+      }
     }
   }, false);
 }
@@ -3231,8 +3310,10 @@ registerCheckoutEventHandler();
 
 // Exports
 
-module.exports = function(rootEl, emitter) {
+module.exports = function(rootEl, _emitter) {
   console.log('cart bootstrap.');
+
+  emitter = _emitter;
 
   storeService.loadCartProducts();
 
@@ -3242,14 +3323,14 @@ module.exports = function(rootEl, emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../format.js":16,"../templates/cart.hg":25,"../templates/cart-empty.hg":26,"../templates/product-item.hg":18}],
-25: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
+}, {"../dom.js":6,"../store-service.js":5,"jmas/throttle":18,"../format.js":19,"../templates/cart.hg":26,"../templates/cart-empty.hg":27,"../templates/product-item.hg":21}],
 26: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+27: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}],
-9: [function(require, module, exports) {
+}, {"hogan-runtime":17}],
+11: [function(require, module, exports) {
 "use strict";
 
 
@@ -3269,19 +3350,40 @@ var partEl = document.createElement('DIV');
 var checkoutHtml = checkoutTemplate.render();
 dom.replaceHtml(partEl, checkoutHtml);
 
+
 // Exports
 
 module.exports = function(rootEl, emitter) {
   console.log('checkout bootstrap.');
 
-  emitter.on('checkout.finished', function() {
-    alert('Checkouted!');
-    location.href = '#/checkout-prompt';
-  });
-
   return partEl;
 };
-}, {"../dom.js":5,"../templates/checkout.hg":27}],
-27: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"checkout-prompt\">");t.b("\n" + i);t.b("	<p><img src=\"images/accept.png\" /></p>");t.b("\n" + i);t.b("	<p><b>Ваш заказ принят!</b></p>");t.b("\n" + i);t.b("	<p>Скоро мы вам позвоним и уточним куда и как доставить заказ.</p>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
-}, {"hogan-runtime":19}]}, {}, {"1":""})
+}, {"../dom.js":6,"../templates/checkout.hg":28}],
+28: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"checkout-prompt\">");t.b("\n" + i);t.b("	<p><img src=\"images/accept.png\" /></p>");t.b("\n" + i);t.b("	<p><b>Ваш заказ принят!</b></p>");t.b("\n" + i);t.b("	<p>Скоро мы вам позвоним и уточним куда и как доставить заказ.</p>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<div id=\"checkout-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":17}],
+12: [function(require, module, exports) {
+"use strict";
+
+
+// Requires
+
+var dom = require('../dom.js');
+var throttle = require('jmas/throttle');
+var parallel = require('jmas/parallel');
+var storeService = require('../store-service.js');
+
+
+// Local vars
+
+var partEl = document.createElement('DIV');
+
+
+// Exports
+
+module.exports = function(rootEl, emitter) {
+	console.log('checkout bootstrap.');
+
+	return partEl;
+};
+}, {"../dom.js":6,"jmas/throttle":18,"jmas/parallel":22,"../store-service.js":5}]}, {}, {"1":""})

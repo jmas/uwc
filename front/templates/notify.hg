@@ -1,0 +1,5 @@
+<div id="message-list" class="message-list">
+  {{#notifies}}
+  <div class="message-item {{type}}">{{message}}</div>
+  {{/notifies}}
+</div>

@@ -8,6 +8,6 @@
   <div class="product-summary">
     <a class="name" href="#/product/{{id}}">{{name}}</a>
     <div class="price">{{_priceFormatted}} грн.</div>
-    <span class="action-btn accept" data-cart="{{id}}">В корзину</span>
+    <span class="action-btn {{#_inCart}}remove{{/_inCart}}{{^_inCart}}accept{{/_inCart}}" data-cart="{{id}}" {{#_inCart}}data-cart-remove{{/_inCart}}>{{#_inCart}}Убрать{{/_inCart}}{{^_inCart}}В корзину{{/_inCart}}</span>
   </div>
 </div>
