@@ -2,5 +2,5 @@
 
 return [
   'debug'=>true,
-  'db.path'=>'db/database.sqlite3',
+  'db.path'=>'db/',
 ];

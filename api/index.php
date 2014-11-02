@@ -20,8 +20,12 @@ $app->response->headers->set('Content-Type', 'application/json');
 
 $dbPath = PROJECT_ROOT . DIRECTORY_SEPARATOR . $app->config('db.path');
 
+if (! file_exists($dbPath . 'database.sqlite3')) {
+  copy($dbPath . 'sample.sqlite3', $dbPath . 'database.sqlite3');
+}
+
 try {
-  $app->db = new PDO('sqlite:' . $dbPath);
+  $app->db = new PDO('sqlite:' . $dbPath . 'database.sqlite3');
   $app->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(Exception $e) {
   throw new Exception('Error connection to DB.');
