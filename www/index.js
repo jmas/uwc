@@ -820,10 +820,11 @@ module.exports = new Emitter({
   products: new Arr,
   cartProducts: new Arr,
   
-  addProductToCart: function(productId) {
+  addProductToCart: function(productId, amount) {
     var _this = this;
+    amount = amount || 1;
 
-    request.post('/api/order/products/' + productId).end(function(response) {
+    request.post('/api/order/products/' + productId).query({amount: amount}).end(function(response) {
       if (! response.ok) {
         _this.emit('error', 'Не удалось получить данные с сервера.');
         return;
@@ -2849,6 +2850,7 @@ var request = require('visionmedia/superagent');
 var productTemplate = require('../templates/product.hg');
 var productViewTemplate = require('../templates/product-view.hg');
 var productItemTemplate = require('../templates/product-item.hg');
+var recomendsEmptyTemplate = require('../templates/recomends-empty.hg');
 
 
 // Local vars
@@ -2863,7 +2865,10 @@ var cartWithProducts = [];
 // Functions
 
 function render() {
-  var productViewHtml = productViewTemplate.render(product);
+  var data = product;
+  data.amount = 1;
+
+  var productViewHtml = productViewTemplate.render(data);
 
   var html = productTemplate.render({
     product_view: productViewHtml
@@ -2877,15 +2882,36 @@ function render() {
   var viewWithListEl = document.getElementById('product-view-view-with-list');
   var cartWithListEl = document.getElementById('product-view-cart-with-list');
 
-  var buyWithHtml = renderList(buyWithProducts, productItemTemplate);
-  var viewWithHtml = renderList(viewWithProducts, productItemTemplate);
-  var cartWithHtml = renderList(cartWithProducts, productItemTemplate);
+  if (buyWithProducts.length > 0) {
+    var buyWithHtml = renderList(buyWithProducts, productItemTemplate);
+  } else {
+    var buyWithHtml = recomendsEmptyTemplate.render();
+  }
+
+  if (viewWithProducts.length > 0) {
+    var viewWithHtml = renderList(viewWithProducts, productItemTemplate);
+  } else {
+    var viewWithHtml = recomendsEmptyTemplate.render();
+  }
+
+  if (cartWithProducts.length > 0) {
+    var cartWithHtml = renderList(cartWithProducts, productItemTemplate);
+  } else {
+    var cartWithHtml = recomendsEmptyTemplate.render();
+  }
 
   dom.replaceHtml(buyWithListEl, buyWithHtml);
   dom.replaceHtml(viewWithListEl, viewWithHtml);
   dom.replaceHtml(cartWithListEl, cartWithHtml);
 
+  // Register amount handler
 
+  var amountEl = document.getElementById('product-view-amount');
+  var cartBtn = document.getElementById('product-view-cart-btn');
+
+  amountEl.addEventListener('change', function() {
+    cartBtn.setAttribute('data-amount', this.value);
+  }, false);
 
   console.log('render product.');
 }
@@ -2976,9 +3002,7 @@ function loadProductAndRecomends(id) {
         next();
       });
     }
-  ], function() {
-    render();
-  });
+  ], throttle(render));
 }
 
 
@@ -2995,7 +3019,7 @@ module.exports = function(rootEl, emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"visionmedia/superagent":12,"../templates/product.hg":20,"../templates/product-view.hg":21,"../templates/product-item.hg":17}],
+}, {"../dom.js":5,"jmas/throttle":15,"jmas/parallel":19,"visionmedia/superagent":12,"../templates/product.hg":20,"../templates/product-view.hg":21,"../templates/product-item.hg":17,"../templates/recomends-empty.hg":22}],
 19: [function(require, module, exports) {
 (function() {
   'use strict';
@@ -3049,7 +3073,10 @@ module.exports = function(rootEl, emitter) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":18}],
 21: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+}, {"hogan-runtime":18}],
+22: [function(require, module, exports) {
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty recomends-empty\">Эта рекомендация недоступна, но скоро здесь появятся товары.</div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":18}],
 8: [function(require, module, exports) {
 "use strict";
@@ -3111,9 +3138,10 @@ function render() {
 function registerCartEventHandler() {
   document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
     var productId = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-cart'): null;
+    var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
     if (productId !== null) {
-      storeService.addProductToCart(productId);
+      storeService.addProductToCart(productId, amount);
     }
   }, false);
 }
@@ -3147,11 +3175,11 @@ module.exports = function(rootEl, emitter) {
 
   return partEl;
 };
-}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/cart.hg":22,"../templates/cart-empty.hg":23,"../templates/product-item.hg":17}],
-22: [function(require, module, exports) {
+}, {"../dom.js":5,"../store-service.js":4,"jmas/throttle":15,"../templates/cart.hg":23,"../templates/cart-empty.hg":24,"../templates/product-item.hg":17}],
+23: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"cart-product-list\" class=\"product-list\">");t.b("\n" + i);t.b("  ");t.b(t.t(t.f("products",c,p,0)));t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":18}],
-23: [function(require, module, exports) {
+24: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty\">В корзине нет продуктов.<br />Нажмите «В корзину» чтобы товар очутился здесь.</div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":18}],
 9: [function(require, module, exports) {

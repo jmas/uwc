@@ -161,6 +161,10 @@ h3 {
 	display: block;
 }
 
+.recomends-empty {
+	margin-bottom: 25px;
+}
+
 
 
 #app {
@@ -235,9 +239,5 @@ h3 {
 #product-view-back {
 	text-align: center;
 	font-size: 1.2em;
-	margin-bottom: 25px;
-}
-
-#product-view-more {
 	margin-bottom: 25px;
 }

@@ -13,10 +13,11 @@ module.exports = new Emitter({
   products: new Arr,
   cartProducts: new Arr,
   
-  addProductToCart: function(productId) {
+  addProductToCart: function(productId, amount) {
     var _this = this;
+    amount = amount || 1;
 
-    request.post('/api/order/products/' + productId).end(function(response) {
+    request.post('/api/order/products/' + productId).query({amount: amount}).end(function(response) {
       if (! response.ok) {
         _this.emit('error', 'Не удалось получить данные с сервера.');
         return;

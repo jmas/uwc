@@ -10,6 +10,7 @@ var request = require('visionmedia/superagent');
 var productTemplate = require('../templates/product.hg');
 var productViewTemplate = require('../templates/product-view.hg');
 var productItemTemplate = require('../templates/product-item.hg');
+var recomendsEmptyTemplate = require('../templates/recomends-empty.hg');
 
 
 // Local vars
@@ -24,7 +25,10 @@ var cartWithProducts = [];
 // Functions
 
 function render() {
-  var productViewHtml = productViewTemplate.render(product);
+  var data = product;
+  data.amount = 1;
+
+  var productViewHtml = productViewTemplate.render(data);
 
   var html = productTemplate.render({
     product_view: productViewHtml
@@ -38,15 +42,36 @@ function render() {
   var viewWithListEl = document.getElementById('product-view-view-with-list');
   var cartWithListEl = document.getElementById('product-view-cart-with-list');
 
-  var buyWithHtml = renderList(buyWithProducts, productItemTemplate);
-  var viewWithHtml = renderList(viewWithProducts, productItemTemplate);
-  var cartWithHtml = renderList(cartWithProducts, productItemTemplate);
+  if (buyWithProducts.length > 0) {
+    var buyWithHtml = renderList(buyWithProducts, productItemTemplate);
+  } else {
+    var buyWithHtml = recomendsEmptyTemplate.render();
+  }
+
+  if (viewWithProducts.length > 0) {
+    var viewWithHtml = renderList(viewWithProducts, productItemTemplate);
+  } else {
+    var viewWithHtml = recomendsEmptyTemplate.render();
+  }
+
+  if (cartWithProducts.length > 0) {
+    var cartWithHtml = renderList(cartWithProducts, productItemTemplate);
+  } else {
+    var cartWithHtml = recomendsEmptyTemplate.render();
+  }
 
   dom.replaceHtml(buyWithListEl, buyWithHtml);
   dom.replaceHtml(viewWithListEl, viewWithHtml);
   dom.replaceHtml(cartWithListEl, cartWithHtml);
 
+  // Register amount handler
 
+  var amountEl = document.getElementById('product-view-amount');
+  var cartBtn = document.getElementById('product-view-cart-btn');
+
+  amountEl.addEventListener('change', function() {
+    cartBtn.setAttribute('data-amount', this.value);
+  }, false);
 
   console.log('render product.');
 }
@@ -137,9 +162,7 @@ function loadProductAndRecomends(id) {
         next();
       });
     }
-  ], function() {
-    render();
-  });
+  ], throttle(render));
 }
 
 

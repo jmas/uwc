@@ -57,9 +57,10 @@ function render() {
 function registerCartEventHandler() {
   document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
     var productId = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-cart'): null;
+    var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
     if (productId !== null) {
-      storeService.addProductToCart(productId);
+      storeService.addProductToCart(productId, amount);
     }
   }, false);
 }

@@ -8,6 +8,6 @@
     <div class="amount">
       <input id="product-view-amount" type="text" value="1" />
     </div>
-    <span class="action-btn accept" data-cart="{{id}}">В корзину</span>
+    <span id="product-view-cart-btn" class="action-btn accept" data-cart="{{id}}" data-cart-amount="{{amount}}">В корзину</span>
   </div>
 </div>
