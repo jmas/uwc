@@ -3,4 +3,5 @@
 .vagrant
 .cache/
 .bash_history
+/db/database.sqlite3
 composer.lock
