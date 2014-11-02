@@ -142,8 +142,8 @@ router.get('/product/:id', function(id) {
   emitter.emit('page.activated.product', id);
 });
 
-router.get('/checkout', function() {
-  alert('Ваш заказ принят и обрабатывается!');
+router.get('/checkout-prompt', function() {
+  activatePage('checkout');
 });
 
 registerRouting();

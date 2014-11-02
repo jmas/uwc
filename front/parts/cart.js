@@ -70,6 +70,7 @@ function registerCartEventHandler() {
 function registerCheckoutEventHandler() {
   cartCheckoutBtn.addEventListener('click', function(event) {
     storeService.checkout();
+
   }, false);
 }
 

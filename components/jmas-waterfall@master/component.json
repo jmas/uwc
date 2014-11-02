@@ -1,0 +1,10 @@
+{
+  "name": "waterfall",
+  "repository": "jmas/waterfall",
+  "description": "JavaScript very simple Waterfall",
+  "version": "0.1.0",
+  "keywords": ["waterfall", "async"],
+  "scripts": ["waterfall.js"],
+  "main": "waterfall.js",
+  "license": "GNU GPL 2.0"
+}

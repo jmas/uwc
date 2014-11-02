@@ -94,7 +94,7 @@ module.exports = new Emitter({
         return;
       }
 
-      _this.emit('checkout');
+      _this.emit('checkout.finished');
 
       try {
         _this.cartProducts.remove();

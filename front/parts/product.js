@@ -6,6 +6,7 @@
 var dom = require('../dom.js');
 var throttle = require('jmas/throttle');
 var parallel = require('jmas/parallel');
+var waterfall = require('jmas/waterfall');
 var request = require('visionmedia/superagent');
 var fmt = require('../format.js');
 
@@ -95,83 +96,87 @@ function renderList(items, itemTemplate) {
 }
 
 function loadProductAndRecomends(id) {
-  parallel([
-    function(next) { // load product
-      request.get('/api/product/' + id).end(function(response) {
-        if (! response.ok) {
-          emitter.emit('error', 'Не удалось получить данные с сервера.');
-          next();
-          return;
-        }
 
-        if (typeof response.body.result !== 'undefined') {
-          product = response.body.result;
-        } else {
-          product = {};
-        }
-
+  function loadProduct(next) { // load product
+    request.get('/api/product/' + id).end(function(response) {
+      if (! response.ok) {
+        emitter.emit('error', 'Не удалось получить данные с сервера.');
         next();
+        return;
+      }
 
-        console.log('loadProducts - product.');
-      });
-    },
-    function(next) { // load recomends by view
-      request.get('/api/product/view-with/' + id).end(function(response) {
-        if (! response.ok) {
-          emitter.emit('error', 'Не удалось получить данные с сервера.');
+      if (typeof response.body.result !== 'undefined') {
+        product = response.body.result;
+      } else {
+        product = {};
+      }
+
+      next();
+
+      console.log('loadProducts - product.');
+    });
+  }
+
+  loadProduct(function() {
+    parallel([
+      function(next) { // load recomends by view
+        request.get('/api/product/view-with/' + id).end(function(response) {
+          if (! response.ok) {
+            emitter.emit('error', 'Не удалось получить данные с сервера.');
+            next();
+            return;
+          }
+
+          if (typeof response.body.result !== 'undefined') {
+            viewWithProducts = response.body.result;
+          } else {
+            viewWithProducts = [];
+          }
+
           next();
-          return;
-        }
 
-        if (typeof response.body.result !== 'undefined') {
-          viewWithProducts = response.body.result;
-        } else {
-          viewWithProducts = [];
-        }
+          console.log('loadProducts - view-with.');
+        });
+      },
+      function(next) { // load recomends by cart
+        request.get('/api/product/cart-with/' + id).end(function(response) {
+          if (! response.ok) {
+            emitter.emit('error', 'Не удалось получить данные с сервера.');
+            next();
+            return;
+          }
 
-        next();
+          if (typeof response.body.result !== 'undefined') {
+            cartWithProducts = response.body.result;
+          } else {
+            cartWithProducts = [];
+          }
 
-        console.log('loadProducts - view-with.');
-      });
-    },
-    function(next) { // load recomends by cart
-      request.get('/api/product/cart-with/' + id).end(function(response) {
-        if (! response.ok) {
-          emitter.emit('error', 'Не удалось получить данные с сервера.');
           next();
-          return;
-        }
 
-        if (typeof response.body.result !== 'undefined') {
-          cartWithProducts = response.body.result;
-        } else {
-          cartWithProducts = [];
-        }
+          console.log('loadProducts - cart-with.');
+        });
+      },
+      function(next) { // load recomends by buy
+        request.get('/api/product/buy-with/' + id).end(function(response) {
+          if (! response.ok) {
+            emitter.emit('error', 'Не удалось получить данные с сервера.');
+            next();
+            return;
+          }
 
-        next();
+          if (typeof response.body.result !== 'undefined') {
+            buyWithProducts = response.body.result;
+          } else {
+            buyWithProducts = [];
+          }
 
-        console.log('loadProducts - cart-with.');
-      });
-    },
-    function(next) { // load recomends by buy
-      request.get('/api/product/buy-with/' + id).end(function(response) {
-        if (! response.ok) {
-          emitter.emit('error', 'Не удалось получить данные с сервера.');
           next();
-          return;
-        }
-
-        if (typeof response.body.result !== 'undefined') {
-          buyWithProducts = response.body.result;
-        } else {
-          buyWithProducts = [];
-        }
-
-        next();
-        console.log('loadProducts - buy-with.');
-      });
-    }
-  ], throttle(render));
+          console.log('loadProducts - buy-with.');
+        });
+      }
+    ], throttle(render));
+  });
 }
 
 

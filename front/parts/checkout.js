@@ -4,9 +4,8 @@
 // Requires
 
 var dom = require('../dom.js');
-var throttle = require('jmas/throttle');
-var parallel = require('jmas/parallel');
-var storeService = require('../store-service.js');
+
+var checkoutTemplate = require('../templates/checkout.hg');
 
 
 // Local vars
@@ -14,10 +13,19 @@ var storeService = require('../store-service.js');
 var partEl = document.createElement('DIV');
 
 
+// Bootstrap
+var checkoutHtml = checkoutTemplate.render();
+dom.replaceHtml(partEl, checkoutHtml);
+
 // Exports
 
 module.exports = function(rootEl, emitter) {
-	console.log('checkout bootstrap.');
+  console.log('checkout bootstrap.');
 
-	return partEl;
+  emitter.on('checkout.finished', function() {
+    alert('Checkouted!');
+    location.href = '#/checkout-prompt';
+  });
+
+  return partEl;
 };
