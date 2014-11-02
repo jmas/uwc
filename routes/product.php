@@ -100,10 +100,7 @@ $app->get('/cart-with/:productId', function($productId) use ($app) {
   (
     SELECT DISTINCT product_id FROM order_product WHERE order_id IN 
     (
-      SELECT id FROM user_order WHERE id IN 
-      (
-        SELECT order_id FROM order_product WHERE product_id = :productId
-      ) AND purchased = 0
+      SELECT order_id FROM order_product WHERE product_id = :productId
     ) AND product_id <> :productId ORDER BY RANDOM() LIMIT 4
   )';
 
