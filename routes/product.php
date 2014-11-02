@@ -42,7 +42,31 @@ $app->get('/:id', function($id) use ($app) {
 // Recomendation: Bought with
 
 $app->get('/buy-with/:productId', function($productId) use ($app) {
+
+  $sql = 'SELECT * FROM product WHERE id IN 
+  (
+    SELECT DISTINCT product_id FROM order_product WHERE order_id IN 
+    (
+      SELECT id FROM user_order WHERE id IN 
+      (
+        SELECT order_id FROM order_product WHERE product_id = :productId
+      ) AND purchased = 1
+    ) AND product_id <> :productId ORDER BY product_id
+  )';
+
+  $stmt = $app->db->prepare($sql);
+  $stmt->bindParam(':productId', $productId);
   
+  if ($stmt->execute() === false) {
+    $app->halt(503, 'Query is not executable!');
+  }
+
+  $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  $app->response->write(json_encode([
+    'result'=>$result,
+  ]));
+
 });
 
 
