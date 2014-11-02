@@ -41,3 +41,4 @@ chmod -Rf 775 *
 # sudo npm install -g bower -y > /dev/null 2>&1
 
 echo "Finished provisioning."
+echo "Server working on http://127.0.0.1:8080"
