@@ -62,7 +62,7 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
       (
         SELECT order_id FROM order_product WHERE product_id = :productId
       ) AND purchased = 1
-    ) AND product_id <> :productId ORDER BY RAND() LIMIT 4
+    ) AND product_id <> :productId ORDER BY RANDOM() LIMIT 4
   )';
 
   $stmt = $app->db->prepare($sql);
@@ -85,6 +85,14 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
 
 $app->get('/view-with/:productId', function($productId) use ($app) {
 
+
+});
+
+
+// Recomendation: Added to cart with
+
+$app->get('/cart-with/:productId', function($productId) use ($app) {
+  
   $sql = 'SELECT * FROM product WHERE id IN 
   (
     SELECT DISTINCT product_id FROM order_product WHERE order_id IN 
@@ -93,7 +101,7 @@ $app->get('/view-with/:productId', function($productId) use ($app) {
       (
         SELECT order_id FROM order_product WHERE product_id = :productId
       ) AND purchased = 0
-    ) AND product_id <> :productId ORDER BY RAND() LIMIT 4
+    ) AND product_id <> :productId ORDER BY RANDOM() LIMIT 4
   )';
 
   $stmt = $app->db->prepare($sql);
@@ -109,11 +117,4 @@ $app->get('/view-with/:productId', function($productId) use ($app) {
     'result'=>$result,
   ]));
 
-});
-
-
-// Recomendation: Added to cart with
-
-$app->get('/cart-with/:productId', function($productId) use ($app) {
-  
 });
