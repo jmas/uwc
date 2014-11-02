@@ -41,15 +41,15 @@ module.exports = {
     );
   },
   scrollTo: function(el, to, duration) {
-    // duration = duration || 100;
-
-    // var difference = to - el.scrollTop;
-    // var perTick = difference / duration * 10;
-
-    // setTimeout(function() {
-      el.scrollTop = to;
-    //   if (el.scrollTop <= to) return;
-    //   scrollTo(el, to, duration - 10);
-    // }, 10);
+    el.scrollTop = to;
+  },
+  addListener: function(el, eventName, handlerFn) {
+    if (typeof el.addEventListener !== 'undefined') {
+      el.addEventListener(eventName, handlerFn, false);
+    } else if (typeof el.attachEvent !== 'undefined') {
+      el.attachEvent('on' + eventName, handlerFn);
+    } else {
+      el['on' + eventName] = handlerFn;
+    }
   }
 };

@@ -58,7 +58,7 @@ function render() {
 }
 
 function registerCartEventHandler() {
-  document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
+  dom.addListener(document.getElementsByTagName('BODY')[0], 'click', function(event) {
     var productId = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-cart'): null;
     var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
@@ -71,14 +71,13 @@ function registerCartEventHandler() {
         emitter.emit('success', 'Товар добавлен в корзину');
       }
     }
-  }, false);
+  });
 }
 
 function registerCheckoutEventHandler() {
-  cartCheckoutBtn.addEventListener('click', function(event) {
+  dom.addListener(cartCheckoutBtn, 'click', function(event) {
     storeService.checkout();
-
-  }, false);
+  });
 }
 
 

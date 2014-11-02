@@ -2487,16 +2487,16 @@ module.exports = {
     );
   },
   scrollTo: function(el, to, duration) {
-    // duration = duration || 100;
-
-    // var difference = to - el.scrollTop;
-    // var perTick = difference / duration * 10;
-
-    // setTimeout(function() {
-      el.scrollTop = to;
-    //   if (el.scrollTop <= to) return;
-    //   scrollTo(el, to, duration - 10);
-    // }, 10);
+    el.scrollTop = to;
+  },
+  addListener: function(el, eventName, handlerFn) {
+    if (typeof el.addEventListener !== 'undefined') {
+      el.addEventListener(eventName, handlerFn, false);
+    } else if (typeof el.attachEvent !== 'undefined') {
+      el.attachEvent('on' + eventName, handlerFn);
+    } else {
+      el['on' + eventName] = handlerFn;
+    }
   }
 };
 }, {}],
@@ -3034,9 +3034,9 @@ function render() {
   var amountEl = document.getElementById('product-view-amount');
   var cartBtn = document.getElementById('product-view-cart-btn');
 
-  amountEl.addEventListener('change', function() {
+  dom.addListener(amountEl, 'change', function() {
     cartBtn.setAttribute('data-amount', this.value);
-  }, false);
+  });
 
   console.log('render product.');
 }
@@ -3275,7 +3275,7 @@ function render() {
 }
 
 function registerCartEventHandler() {
-  document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
+  dom.addListener(document.getElementsByTagName('BODY')[0], 'click', function(event) {
     var productId = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-cart'): null;
     var amount = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-amount'): null;
 
@@ -3288,14 +3288,13 @@ function registerCartEventHandler() {
         emitter.emit('success', 'Товар добавлен в корзину');
       }
     }
-  }, false);
+  });
 }
 
 function registerCheckoutEventHandler() {
-  cartCheckoutBtn.addEventListener('click', function(event) {
+  dom.addListener(cartCheckoutBtn, 'click', function(event) {
     storeService.checkout();
-
-  }, false);
+  });
 }
 
 

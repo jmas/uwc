@@ -73,9 +73,9 @@ function render() {
   var amountEl = document.getElementById('product-view-amount');
   var cartBtn = document.getElementById('product-view-cart-btn');
 
-  amountEl.addEventListener('change', function() {
+  dom.addListener(amountEl, 'change', function() {
     cartBtn.setAttribute('data-amount', this.value);
-  }, false);
+  });
 
   console.log('render product.');
 }
