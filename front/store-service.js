@@ -47,7 +47,7 @@ module.exports = new Emitter({
       }
 
       try {
-        _this.cartProducts.remove();
+        _this.cartProducts.length = 0;
         _this.cartProducts.insert(response.body.result);
       } catch (e) {
         console.error(e);
@@ -72,7 +72,7 @@ module.exports = new Emitter({
       }
 
       try {
-        _this.products.remove();
+        _this.products.length = 0;
         _this.products.insert(response.body.result);
       } catch (e) {
         console.error(e);
