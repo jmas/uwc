@@ -30,6 +30,7 @@ var emitter = null;
 function render() {
   var data = product;
   data.amount = 1;
+  data._priceFormatted = fmt.formatCur(parseFloat(data.price), 2, 3, ' ', ',');
 
   var productViewHtml = productViewTemplate.render(data);
 

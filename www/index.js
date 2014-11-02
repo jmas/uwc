@@ -168,51 +168,67 @@ function activatePage(name) {
 }
 
 function registerRouting() {
-  document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
-    var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
-    var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
+  // document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
+  //   var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
+  //   var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
 
-    if (alternateRoute === null) {
-      var node = event.target.parentNode;
-      var len = 0;
+  //   if (alternateRoute === null) {
+  //     var node = event.target.parentNode;
+  //     var len = 0;
 
-      while (node) {
-        if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
-          alternateRoute = node.getAttribute('href');
-          break;
-        }
+  //     while (node) {
+  //       if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
+  //         alternateRoute = node.getAttribute('href');
+  //         break;
+  //       }
 
-        if (len > 10) {
-          break;
-        }
+  //       if (len > 10) {
+  //         break;
+  //       }
 
-        node = node.parentNode;
-        len++;
-      }
+  //       node = node.parentNode;
+  //       len++;
+  //     }
+  //   }
+
+  //   if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
+  //     route = alternateRoute.substring(1);
+  //   }
+
+  //   if (route !== null) {
+  //     console.log('dispatch location: ', route);
+  //     router.dispatch(route);
+  //   }
+  // }, false);
+
+  var prevLoc = null;
+  var loc;
+
+  function pingLocation() {
+    loc = location.hash.substring(1);
+
+    if (loc !== prevLoc) {
+      router.dispatch(loc);
+      prevLoc = loc;
     }
 
-    if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
-      route = alternateRoute.substring(1);
-    }
-
-    if (route !== null) {
-      console.log('dispatch location: ', route);
-      router.dispatch(route);
-    }
-  }, false);
-}
-
-function dispatchRouting() {
-  var loc = location.hash.substring(1);
-
-  if (! loc) {
-    loc = '/';
+    setTimeout(pingLocation, 10);
   }
 
-  console.log('dispatch start location: ', loc);
-  
-  router.dispatch(loc);
+  pingLocation();
 }
+
+// function dispatchRouting() {
+//   var loc = location.hash.substring(1);
+
+//   if (! loc) {
+//     loc = '/';
+//   }
+
+//   console.log('dispatch start location: ', loc);
+  
+//   router.dispatch(loc);
+// }
 
 function registerCart() {
   var el = document.createElement('DIV');
@@ -260,7 +276,7 @@ router.get('/checkout', function() {
 });
 
 registerRouting();
-dispatchRouting();
+// dispatchRouting();
 }, {"component/router":2,"component/emitter":3,"./store-service.js":4,"./dom.js":5,"./parts/products.js":6,"./parts/product.js":7,"./parts/cart.js":8,"./parts/checkout.js":9}],
 2: [function(require, module, exports) {
 
@@ -2885,6 +2901,7 @@ var emitter = null;
 function render() {
   var data = product;
   data.amount = 1;
+  data._priceFormatted = fmt.formatCur(parseFloat(data.price), 2, 3, ' ', ',');
 
   var productViewHtml = productViewTemplate.render(data);
 
@@ -3098,7 +3115,7 @@ module.exports = function(rootEl, _emitter) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.t(t.f("product_view",c,p,0)));t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-back\">");t.b("\n" + i);t.b("  <a class=\"action-btn\" href=\"#/\">Вернуться к списку товаров</a>");t.b("\n" + i);t.b("</div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые покупают с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-buy-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые просматриваются с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-view-with-list\" class=\"product-list hor-list\"></div>");t.b("\n");t.b("\n" + i);t.b("<h3>Товары, которые добавляются в корзину с этим товаром</h3>");t.b("\n");t.b("\n" + i);t.b("<div id=\"product-view-cart-with-list\" class=\"product-list hor-list\"></div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":19}],
 22: [function(require, module, exports) {
-var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("price",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
+var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"product-view\">");t.b("\n" + i);t.b("  <div class=\"product-image\">");t.b("\n" + i);t.b("    <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" />");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"product-summary\">");t.b("\n" + i);t.b("    <span class=\"name\">");t.b(t.v(t.f("name",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    <div class=\"price\">");t.b(t.v(t.f("_priceFormatted",c,p,0)));t.b(" грн.</div>");t.b("\n" + i);t.b("    <div class=\"amount\">");t.b("\n" + i);t.b("      <input id=\"product-view-amount\" type=\"text\" value=\"1\" />");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <span id=\"product-view-cart-btn\" class=\"action-btn accept\" data-cart=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\" data-cart-amount=\"");t.b(t.v(t.f("amount",c,p,0)));t.b("\">В корзину</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {}, subs: {  }});
 }, {"hogan-runtime":19}],
 23: [function(require, module, exports) {
 var Template = require('hogan-runtime').Template;module.exports = new Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"empty recomends-empty\">Эта рекомендация недоступна, но скоро здесь появятся товары.</div>");return t.fl(); },partials: {}, subs: {  }});

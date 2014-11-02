@@ -4,7 +4,7 @@
   </div>
   <div class="product-summary">
     <span class="name">{{name}}</span>
-    <div class="price">{{price}}</div>
+    <div class="price">{{_priceFormatted}} грн.</div>
     <div class="amount">
       <input id="product-view-amount" type="text" value="1" />
     </div>

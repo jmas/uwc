@@ -83,50 +83,21 @@ function activatePage(name) {
 }
 
 function registerRouting() {
-  document.getElementsByTagName('BODY')[0].addEventListener('click', function(event) {
-    var route = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('data-route'): null;
-    var alternateRoute = typeof event.target.getAttribute !== 'undefined' ? event.target.getAttribute('href'): null;
+  var prevLoc = null;
+  var loc;
 
-    if (alternateRoute === null) {
-      var node = event.target.parentNode;
-      var len = 0;
+  function pingLocation() {
+    loc = location.hash.substring(1);
 
-      while (node) {
-        if (typeof node.getAttribute !== 'undefined' && node.getAttribute('href') !== null) {
-          alternateRoute = node.getAttribute('href');
-          break;
-        }
-
-        if (len > 10) {
-          break;
-        }
-
-        node = node.parentNode;
-        len++;
-      }
+    if (loc !== prevLoc) {
+      router.dispatch(loc);
+      prevLoc = loc;
     }
 
-    if (route === null && alternateRoute !== null && alternateRoute.indexOf('#') === 0) {
-      route = alternateRoute.substring(1);
-    }
-
-    if (route !== null) {
-      console.log('dispatch location: ', route);
-      router.dispatch(route);
-    }
-  }, false);
-}
-
-function dispatchRouting() {
-  var loc = location.hash.substring(1);
-
-  if (! loc) {
-    loc = '/';
+    setTimeout(pingLocation, 10);
   }
 
-  console.log('dispatch start location: ', loc);
-  
-  router.dispatch(loc);
+  pingLocation();
 }
 
 function registerCart() {
@@ -175,4 +146,3 @@ router.get('/checkout', function() {
 });
 
 registerRouting();
-dispatchRouting();
