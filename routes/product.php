@@ -22,6 +22,17 @@ $app->get('/', function () use ($app) {
 // Get one product
 
 $app->get('/:id', function($id) use ($app) {
+
+  $sql = 'INSERT INTO product_view (product_id, user_id) VALUES (:product_id, :user_id)';
+
+  $stmt = $app->db->prepare($sql);
+  $stmt->bindParam(':product_id', $product_id);
+  $stmt->bindParam(':user_id', $_SESSION['user_id']);
+  
+  if ($stmt->execute() === false) {
+    $app->halt(503, 'Query is not executable!');
+  }  
+
   $sql = 'SELECT * FROM product WHERE id=:id LIMIT 1';
 
   $stmt = $app->db->prepare($sql);
@@ -51,7 +62,7 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
       (
         SELECT order_id FROM order_product WHERE product_id = :productId
       ) AND purchased = 1
-    ) AND product_id <> :productId ORDER BY product_id
+    ) AND product_id <> :productId ORDER BY RAND() LIMIT 4
   )';
 
   $stmt = $app->db->prepare($sql);
@@ -74,6 +85,30 @@ $app->get('/buy-with/:productId', function($productId) use ($app) {
 
 $app->get('/view-with/:productId', function($productId) use ($app) {
 
+  $sql = 'SELECT * FROM product WHERE id IN 
+  (
+    SELECT DISTINCT product_id FROM order_product WHERE order_id IN 
+    (
+      SELECT id FROM user_order WHERE id IN 
+      (
+        SELECT order_id FROM order_product WHERE product_id = :productId
+      ) AND purchased = 0
+    ) AND product_id <> :productId ORDER BY RAND() LIMIT 4
+  )';
+
+  $stmt = $app->db->prepare($sql);
+  $stmt->bindParam(':productId', $productId);
+  
+  if ($stmt->execute() === false) {
+    $app->halt(503, 'Query is not executable!');
+  }
+
+  $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  $app->response->write(json_encode([
+    'result'=>$result,
+  ]));
+
 });
 
 
@@ -81,4 +116,4 @@ $app->get('/view-with/:productId', function($productId) use ($app) {
 
 $app->get('/cart-with/:productId', function($productId) use ($app) {
   
-});  
+});
