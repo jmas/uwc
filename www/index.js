@@ -3035,7 +3035,13 @@ function render() {
   var cartBtn = document.getElementById('product-view-cart-btn');
 
   dom.addListener(amountEl, 'change', function() {
-    cartBtn.setAttribute('data-amount', this.value);
+    var value = parseInt(this.value);
+    
+    if (isNaN(value)) {
+      value = 1;
+    }
+    
+    cartBtn.setAttribute('data-amount', value);
   });
 
   console.log('render product.');
